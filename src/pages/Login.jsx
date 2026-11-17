@@ -7,12 +7,16 @@ import { Box, Button, TextField, Typography, Alert, Link as MuiLink } from '@mui
 import { useSignIn } from '@clerk/react'
 import GenericHeader from '@/components/global/GenericHeader'
 import { useAuth } from '@/contexts/AuthContext'
-import { loginRequest, registerRequest } from '@/sims/project-feasibility/api/auth.api'
+import { loginRequest, registerRequest, forgotPasswordRequest } from '@/sims/project-feasibility/api/auth.api'
 import './Login.css'
 
 const signInSchema = z.object({
   email: z.string().min(1, 'Please fill in all fields').email('Invalid email format'),
   password: z.string().min(1, 'Please fill in all fields'),
+})
+
+const forgotPasswordSchema = z.object({
+  email: z.string().min(1, 'Please fill in all fields').email('Invalid email format'),
 })
 
 const signUpSchema = z.object({
@@ -51,7 +55,72 @@ function useCompleteAuth(redirectTo) {
   }
 }
 
-function SignInForm({ onSwitch, redirectTo }) {
+function ForgotPasswordForm({ onBack }) {
+  const [sent, setSent] = React.useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({ resolver: zodResolver(forgotPasswordSchema) })
+
+  const onSubmit = async ({ email }) => {
+    try {
+      await forgotPasswordRequest(email)
+    } catch {
+      // Silencioso a proposito - el backend ya no revela si el email existe,
+      // asi que el frontend tampoco distingue "no existe" de "fallo de red".
+    }
+    setSent(true)
+  }
+
+  if (sent) {
+    return (
+      <Box className="auth-form-inner">
+        <Typography variant="h5" sx={{ fontWeight: 700, color: '#073a5a' }}>
+          Check your email
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          If that email has an account, we sent a link to reset your password. It expires in 15 minutes.
+        </Typography>
+        <MuiLink component="button" type="button" onClick={onBack} underline="hover" sx={{ mt: 1 }}>
+          Back to Sign In
+        </MuiLink>
+      </Box>
+    )
+  }
+
+  return (
+    <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate className="auth-form-inner">
+      <Typography variant="h5" sx={{ fontWeight: 700, color: '#073a5a' }}>
+        Reset Password
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary">
+        Enter your email and we'll send you a link to reset your password.
+      </Typography>
+
+      <TextField
+        label="Email"
+        type="email"
+        size="small"
+        {...register('email')}
+        error={!!errors.email}
+        helperText={errors.email?.message}
+      />
+
+      <Button type="submit" variant="contained" disabled={isSubmitting} sx={{ bgcolor: '#073a5a', borderRadius: 999, py: 1, mt: 1 }}>
+        Send Reset Link
+      </Button>
+
+      <MuiLink component="button" type="button" onClick={onBack} underline="hover" sx={{ mt: 1 }}>
+        Back to Sign In
+      </MuiLink>
+    </Box>
+  )
+}
+
+function SignInForm({ onSwitch, onForgotPassword, redirectTo }) {
   const completeAuth = useCompleteAuth(redirectTo)
 
   const {
@@ -96,6 +165,10 @@ function SignInForm({ onSwitch, redirectTo }) {
         error={!!errors.password}
         helperText={errors.password?.message}
       />
+
+      <MuiLink component="button" type="button" onClick={onForgotPassword} underline="hover" sx={{ alignSelf: 'flex-end', fontSize: '0.8rem' }}>
+        Forgot password?
+      </MuiLink>
 
       <Button type="submit" variant="contained" disabled={isSubmitting} sx={{ bgcolor: '#073a5a', borderRadius: 999, py: 1, mt: 1 }}>
         Sign In
@@ -192,6 +265,7 @@ function Login() {
   const location = useLocation()
   const redirectTo = typeof location.state?.from === 'string' ? location.state.from : POST_LOGIN_REDIRECT
   const [rightPanelActive, setRightPanelActive] = React.useState(false)
+  const [showForgotPassword, setShowForgotPassword] = React.useState(false)
 
   return (
     <>
@@ -203,7 +277,15 @@ function Login() {
           </Box>
 
           <Box className="auth-form-container auth-sign-in-container">
-            <SignInForm onSwitch={() => setRightPanelActive(true)} redirectTo={redirectTo} />
+            {showForgotPassword ? (
+              <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
+            ) : (
+              <SignInForm
+                onSwitch={() => setRightPanelActive(true)}
+                onForgotPassword={() => setShowForgotPassword(true)}
+                redirectTo={redirectTo}
+              />
+            )}
           </Box>
 
           <Box className="auth-overlay-container">

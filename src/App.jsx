@@ -18,6 +18,7 @@ import CustomExcelBuilder from "./pages/CustomExcelBuilder";
 import Investments from "./pages/sims/Investments";
 import ProjectFeasibility from "./pages/sims/ProjectFeasibility";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import Forecasts from "./pages/sims/Forecasts";
 import { OrientationProvider } from "./contexts/PortraitContext";
 import { NavigationProvider } from "./contexts/NavigationContext";
@@ -87,6 +88,7 @@ function App() {
                   </Route>
 
                   <Route path="/login" element={<Login />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
 
                   <Route path="/faq" element={<FAQ />} />
                 </Routes>
