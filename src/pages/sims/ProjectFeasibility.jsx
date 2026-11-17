@@ -5,9 +5,12 @@ import RequireAuth from "@/sims/project-feasibility/pages/RequireAuth.jsx";
 import ProgramsPortal from "@/sims/project-feasibility/pages/ProgramsPortal.jsx";
 import ProgramsWorkspace from "@/sims/project-feasibility/pages/ProgramsWorkspace.jsx";
 import ProjectDashboard from "@/sims/project-feasibility/pages/ProjectDashboard.jsx";
+import CreateGame from "@/sims/project-feasibility/pages/CreateGame.jsx";
+import JoinLobby from "@/sims/project-feasibility/pages/JoinLobby.jsx";
 import NewProgram from "@/sims/project-feasibility/pages/NewProgram.jsx";
 import { StagingProvider } from "@/sims/project-feasibility/staging/StagingContext.jsx";
 import { Route, Routes, Navigate } from "react-router-dom";
+import GameLobby from "@/sims/project-feasibility/pages/GameLobby";
 
 function ProjectFeasibility() {
   return (
