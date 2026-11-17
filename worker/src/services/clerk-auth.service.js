@@ -23,6 +23,20 @@ export async function createClerkSignInTicket(env, clerkUserId) {
   }
 }
 
+export async function updateClerkUserPassword(env, clerkUserId, password) {
+  if (!env.CLERK_SECRET_KEY || !clerkUserId) return;
+
+  try {
+    const clerkClient = getClerkClient(env);
+    await clerkClient.users.updateUser(clerkUserId, { password });
+  } catch (error) {
+    // El reset ya actualizó el hash de D1 (fuente de verdad pa login); si Clerk
+    // falla no tumbamos el flujo, solo queda desincronizado como ya pasa hoy
+    // con password.service.js si Clerk estuviera caido en registro.
+    console.error('[clerk-auth.service] updateClerkUserPassword failed:', error);
+  }
+}
+
 export async function createClerkUserAccount(env, { email, password, firstName, lastName }) {
   const clerkClient = getClerkClient(env);
 

@@ -24,3 +24,13 @@ export async function logoutRequest() {
   const { data } = await workerApi.post('/api/auth/logout')
   return data
 }
+
+export async function forgotPasswordRequest(email) {
+  const { data } = await workerApi.post('/api/auth/forgot-password', { email })
+  return data
+}
+
+export async function resetPasswordRequest(token, password) {
+  const { data } = await workerApi.post('/api/auth/reset-password', { token, password })
+  return data
+}

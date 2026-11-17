@@ -11,3 +11,12 @@ export const registerRequestSchema = z.object({
   first_name: z.string().min(1),
   last_name: z.string().min(1),
 });
+
+export const forgotPasswordRequestSchema = z.object({
+  email: z.string().email(),
+});
+
+export const resetPasswordRequestSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8),
+});

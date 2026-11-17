@@ -28,7 +28,9 @@
 		"develop": {
 			"name": "tecbooks-worker-develop",
 			"vars": {
-				"ENVIRONMENT": "develop"
+				"ENVIRONMENT": "develop",
+				"FRONTEND_URL": "https://dev.tecbooks.org",
+				"RESEND_FROM_EMAIL": "noreply@tecbooks.org"
 			},
 			"d1_databases": [
 				{
@@ -47,6 +49,8 @@
 		}
 	},
 	"vars": {
-		"ENVIRONMENT": "production"
+		"ENVIRONMENT": "production",
+		"FRONTEND_URL": "https://tecbooks.org",
+		"RESEND_FROM_EMAIL": "noreply@tecbooks.org"
 	}
 }
