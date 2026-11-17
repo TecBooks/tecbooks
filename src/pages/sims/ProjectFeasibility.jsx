@@ -44,9 +44,6 @@ function ProjectFeasibility() {
                 path="programs/:programId/:projectId"
                 element={<ProjectDashboard />}
               />
-              <Route path="programs/join-game" element={<JoinLobby />} />
-              <Route path="programs/new-game" element={<CreateGame />} />
-              <Route path="game/:code" element={<GameLobby />} />
             </Route>
 
             <Route

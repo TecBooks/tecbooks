@@ -109,11 +109,7 @@ export async function joinGameRoom(c) {
   }
 
   const previousToken = body.sessionToken;
-  const previousIdentity = await resolveGameIdentity(
-    c,
-    previousToken,
-    room,
-  );
+  const previousIdentity = await resolveGameIdentity(c, previousToken, room);
   if (previousIdentity) {
     return c.json({ code, sessionToken: previousToken });
   }
