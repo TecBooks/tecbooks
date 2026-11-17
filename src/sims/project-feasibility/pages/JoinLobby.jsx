@@ -11,20 +11,11 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { getGameRoom } from "../api/game.api";
+import { joinGameRoom } from "../api/game.api";
 
 const INVALID_LINK_ERROR = "Please enter a valid lobby link.";
 const ROOM_NOT_FOUND_ERROR =
   "Sorry, the game room you are looking for does not exists or has been cloesd";
-
-function getRoomCodeFromLink(link) {
-  const url = new URL(link.trim(), window.location.origin);
-  const match = url.pathname.match(
-    /\/sims\/project-feasibility\/game\/([^/]+)\/?$/,
-  );
-
-  return match ? decodeURIComponent(match[1]) : null;
-}
 
 export default function JoinLobby() {
   const [link, setLink] = useState("");
@@ -36,14 +27,19 @@ export default function JoinLobby() {
     event.preventDefault();
     setSubmitError("");
 
-    if (!link || link == "") {
+    if (!link || link === "") {
       setSubmitError(INVALID_LINK_ERROR);
       return;
     }
 
     try {
       setSubmitting(true);
-      const room = await getGameRoom(link);
+      const previousToken = sessionStorage.getItem(`session:${link}`);
+      const room = await joinGameRoom(link, previousToken);
+      if (!room.sessionToken) {
+        throw new Error("Could not create a lobby session. Please try again.");
+      }
+      sessionStorage.setItem(`session:${link}`, room.sessionToken);
       navigate(
         `/sims/project-feasibility/game/${encodeURIComponent(room.code)}`,
       );
@@ -51,6 +47,7 @@ export default function JoinLobby() {
       setSubmitError(
         (error?.response?.status === 404 && ROOM_NOT_FOUND_ERROR) ||
           error?.response?.data?.error ||
+          error?.message ||
           "Could not verify the game room. Please try again.",
       );
     } finally {

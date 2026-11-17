@@ -97,11 +97,17 @@ export function useCreateGame() {
 
     try {
       setSubmitting(true);
-      const { code } = await createGame(form); // ver nota abajo
+      const { code, sessionToken } = await createGame(form);
+      if (!sessionToken) {
+        throw new Error("The game session could not be created.");
+      }
+      sessionStorage.setItem(`session:${code}`, sessionToken);
       navigate(`/sims/project-feasibility/game/${code}`);
     } catch (err) {
       setSubmitError(
-        err?.response?.data?.error || "Could not create the game. Try again.",
+        err?.response?.data?.error ||
+          err?.message ||
+          "Could not create the game. Try again.",
       );
     } finally {
       setSubmitting(false);

@@ -33,7 +33,9 @@ export async function validateProjects(c, placeholders, projectIds) {
 
 export async function findActiveGameRoom(db, code) {
   return db
-    .prepare("SELECT code FROM game_rooms WHERE code = ? AND closed_at IS NULL")
+    .prepare(
+      "SELECT game_id, code, created_by FROM game_rooms WHERE code = ? AND closed_at IS NULL",
+    )
     .bind(code)
     .first();
 }
