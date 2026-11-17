@@ -1,7 +1,6 @@
-import { verify } from "hono/jwt";
+import { verifyGameSessionToken } from "./game-session-token";
 
-async function authenticate(c, gameId) {
-  const token = c.req.query("token");
+export async function resolveGameIdentity(c, token, room) {
   if (!token) return null;
 
   const student = await c.env.DB.prepare(
@@ -11,18 +10,16 @@ async function authenticate(c, gameId) {
       WHERE s.session_token = ? AND t.game_id = ?
     `,
   )
-    .bind(token, gameId)
+    .bind(token, room.game_id)
     .first();
   if (student)
     return { role: "student", id: student.id, name: student.display_name };
 
-  // Teacher: JWT
-  try {
-    const p = await verify(token, c.env.JWT_SECRET, "HS256");
-    return { role: "teacher", id: p.id, name: p.name ?? "Teacher" };
-  } catch {
-    return null;
-  }
+  return verifyGameSessionToken(c.env.JWT_SECRET, token, room);
+}
+
+async function authenticate(c, room) {
+  return resolveGameIdentity(c, c.req.query("token"), room);
 }
 
 export default authenticate;
