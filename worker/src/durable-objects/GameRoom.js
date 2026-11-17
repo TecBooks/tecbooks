@@ -2,6 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 
 export class GameRoom extends DurableObject {
   async fetch(request) {
+    // eslint-disable-next-line no-undef
     const [client, server] = Object.values(new WebSocketPair());
 
     const me = {

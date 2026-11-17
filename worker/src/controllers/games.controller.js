@@ -1,6 +1,7 @@
 import authenticate from "../utils/authenticate";
 import {
   createGameRoom,
+  findActiveGameRoom,
   validateProjects,
 } from "../services/game-room.service";
 
@@ -57,6 +58,23 @@ export async function createGame(c) {
   }
 
   return c.json({ error: "Could not allocate code" }, 500);
+}
+
+export async function getGameRoom(c) {
+  const code = c.req.param("code");
+  const room = await findActiveGameRoom(c.env.DB, code);
+
+  if (!room) {
+    return c.json(
+      {
+        error:
+          "Sorry, the game room you are looking for does not exists or has been cloesd",
+      },
+      404,
+    );
+  }
+
+  return c.json({ code: room.code });
 }
 
 export async function joinRoom(c) {

@@ -1,3 +1,4 @@
+import { Typography } from "@mui/material";
 import { useParams } from "react-router-dom";
 import { useGameSocket } from "../hooks/useGameSocket";
 import { TeacherLobby } from "@/components/sims/program/game/TeacherLobby";
@@ -12,20 +13,49 @@ export default function GameLobby() {
     code,
     token,
   );
+  const roomCodeMessage = (
+    <Typography variant="h6" component="p">
+      Room code: <strong>{code}</strong>
+    </Typography>
+  );
 
-  if (!token) return <p>You need to join this game first.</p>;
-  if (!me) return <p>{connected ? "Loading…" : "Connecting…"}</p>;
-  if (gameStatus === "running") return <p>Game in progress…</p>;
+  if (!token)
+    return (
+      <>
+        {roomCodeMessage}
+        <p>You need to join this game first.</p>
+      </>
+    );
+  if (!me)
+    return (
+      <>
+        {roomCodeMessage}
+        <p>{connected ? "Loading…" : "Connecting…"}</p>
+      </>
+    );
+  if (gameStatus === "running")
+    return (
+      <>
+        {roomCodeMessage}
+        <p>Game in progress…</p>
+      </>
+    );
 
   const students = online.filter((u) => u.role === "student");
 
   return me.role === "teacher" ? (
-    <TeacherLobby
-      code={code}
-      students={students}
-      onStart={() => send({ type: "start_game" })}
-    />
+    <>
+      {roomCodeMessage}
+      <TeacherLobby
+        code={code}
+        students={students}
+        onStart={() => send({ type: "start_game" })}
+      />
+    </>
   ) : (
-    <StudentLobby name={me.name} students={students} />
+    <>
+      {roomCodeMessage}
+      <StudentLobby name={me.name} students={students} />
+    </>
   );
 }

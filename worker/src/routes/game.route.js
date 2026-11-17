@@ -1,7 +1,11 @@
 import { Hono } from "hono";
 import { loggerMiddleware } from "../middleware/logger.middleware";
 import { sessionMiddleware } from "../middleware/session.middleware";
-import { createGame, joinRoom } from "../controllers/games.controller";
+import {
+  createGame,
+  getGameRoom,
+  joinRoom,
+} from "../controllers/games.controller";
 import { requireTeacher } from "../middleware/require-teacher.middleware";
 import { getProjects } from "../controllers/project.controller";
 
@@ -12,4 +16,5 @@ gameRoute.use("*", sessionMiddleware);
 
 gameRoute.get("/projects", getProjects);
 gameRoute.post("/create", requireTeacher, createGame);
+gameRoute.get("/rooms/:code", getGameRoom);
 gameRoute.get("/:code/join", joinRoom);

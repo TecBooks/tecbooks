@@ -1,5 +1,5 @@
 export async function createGameRoom(c, roomData, projectIds) {
-  console.log({ roomData, projectIds });
+  // console.log({ roomData, projectIds });
   const { code, name, userId, numTeams, timePerRound } = roomData;
   await c.env.DB.batch([
     c.env.DB.prepare(
@@ -29,6 +29,13 @@ export async function validateProjects(c, placeholders, projectIds) {
   )
     .bind(...projectIds)
     .all();
+}
+
+export async function findActiveGameRoom(db, code) {
+  return db
+    .prepare("SELECT code FROM game_rooms WHERE code = ? AND closed_at IS NULL")
+    .bind(code)
+    .first();
 }
 
 async function getRoom(db, code) {

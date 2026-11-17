@@ -6,6 +6,7 @@ import ProgramsPortal from "@/sims/project-feasibility/pages/ProgramsPortal.jsx"
 import ProgramsWorkspace from "@/sims/project-feasibility/pages/ProgramsWorkspace.jsx";
 import ProjectDashboard from "@/sims/project-feasibility/pages/ProjectDashboard.jsx";
 import CreateGame from "@/sims/project-feasibility/pages/CreateGame.jsx";
+import JoinLobby from "@/sims/project-feasibility/pages/JoinLobby.jsx";
 import NewProgram from "@/sims/project-feasibility/pages/NewProgram.jsx";
 import { StagingProvider } from "@/sims/project-feasibility/staging/StagingContext.jsx";
 import { Route, Routes, Navigate } from "react-router-dom";
@@ -43,8 +44,9 @@ function ProjectFeasibility() {
                 path="programs/:programId/:projectId"
                 element={<ProjectDashboard />}
               />
-              <Route path="programs/newGame" element={<CreateGame />} />
-              <Route path="games/:gameId" element={<GameLobby />} />
+              <Route path="programs/join-game" element={<JoinLobby />} />
+              <Route path="programs/new-game" element={<CreateGame />} />
+              <Route path="game/:code" element={<GameLobby />} />
             </Route>
 
             <Route

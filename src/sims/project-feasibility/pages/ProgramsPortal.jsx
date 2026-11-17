@@ -69,7 +69,7 @@ function ProgramsPortal() {
           <Button
             id="create-game"
             component={RouterLink}
-            to="newGame"
+            to="join-game"
             variant="contained"
             startIcon={<AddIcon />}
             sx={{
@@ -80,7 +80,7 @@ function ProgramsPortal() {
               whiteSpace: "nowrap",
             }}
           >
-            Create Game
+            Join Game
           </Button>
           <Button
             id="add-project-btn"
