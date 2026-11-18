@@ -25,6 +25,7 @@ import Ratios from "@/components/sims/program/Ratios";
 import Balance from "@/components/sims/program/Balance";
 import CashFlow from "@/components/sims/program/CashFlow";
 import FinancialRatios from "@/components/sims/program/FinancialRatios";
+import MonteCarlo from "@/components/sims/program/MonteCarlo";
 import useFeasibilityModel from "@/hooks/sims/project/useFeasibilityModel";
 import { PageTour } from "@/tours/PageTour";
 import TourButton from "@/components/global/TourButton";
@@ -58,6 +59,7 @@ const TABS = [
   { id: "cash-flows", label: "Cash Flows" },
   { id: "balance", label: "Balance Sheet" },
   { id: "ratios", label: "Ratios" },
+  { id: "monte-carlo", label: "Risk (Monte Carlo)" },
 ];
 
 const LIVE_TAB_IDS = new Set([
@@ -67,6 +69,7 @@ const LIVE_TAB_IDS = new Set([
   "cash-flows",
   "balance",
   "ratios",
+  "monte-carlo",
 ]);
 
 const projectDashboardTour = new PageTour([
@@ -75,7 +78,7 @@ const projectDashboardTour = new PageTour([
     popover: {
       title: "Financial statements",
       description:
-        "Switch between Inflows, Outflows, Income Statement, Cash Flows, Balance Sheet and Ratios.",
+        "Switch between Inflows, Outflows, Income Statement, Cash Flows, Balance Sheet, Ratios and the Monte Carlo risk analysis.",
     },
   },
   {
@@ -314,6 +317,7 @@ function TabContent({ activeTab, programId, projectId, project, currency }) {
   if (activeTab.id === "cash-flows") return <CashFlow project={projectWithCbm} currency={currency}/>;
   if (activeTab.id === "balance") return <Balance project={projectWithCbm} currency={currency}/>;
   if (activeTab.id === "ratios") return <FinancialRatios project={projectWithCbm} currency={currency}/>;
+  if (activeTab.id === "monte-carlo") return <MonteCarlo project={projectWithCbm} currency={currency}/>;
 
   return (
     <MockStatement

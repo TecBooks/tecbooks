@@ -56,3 +56,19 @@ Upload is multipart: `name`, `projects` (JSON, CBM **without** `derivedBase`), `
 - Worker feature: `worker/src/{routes,controllers,usecases,services,models,mappers}/`
 - Redux in this sim: edit slices only (`src/store/costTable.store.js`), not the project document.
 - Table/row formula help: `InfoTooltip` (`src/components/global/InfoTooltip.jsx`) next to `TableContainer` titles (`titleTooltip`) and row labels (`row.tooltip`). Same icon on `CollapsibleSection` via `tooltip`.
+
+## Client-only simulations (Monte Carlo POC)
+
+Heavy client math that is **not** server state (no HTTP) does not use TanStack. Pattern from the Risk (Monte Carlo) tab:
+
+| | |
+|---|---|
+| Engine | `src/sims/project-feasibility/montecarlo/` — pure JS, no React (`random`, `distributions`, `sampling`, `statistics`, `runMonteCarlo`) |
+| Model adapter | `montecarlo/feasibilityModel.js` — the **only** file that knows the CBM shape. Engine sees `evaluate(draw) -> { years, cashFlows, npv, irr, trema, accepted }` |
+| Off main thread | `montecarlo/montecarlo.worker.js` (`new Worker(new URL(relativePath, import.meta.url), { type: 'module' })`; `@/` aliases resolve inside the worker bundle) |
+| Hook | `src/hooks/sims/project/useMonteCarlo.js` → `{ status, progress, result, error, run, cancel, reset }` |
+| Tab | `src/components/sims/program/MonteCarlo.jsx`; pieces in `montecarlo/components/` |
+
+- Reuse the existing calculators (`computeCashBalanceByYear`, `computeNPV/IRR`, `decideProject`) — never re-implement the financial model. A test asserts that neutral shocks reproduce the Cash Flows TREMA/TIR/VNA panel exactly.
+- Uncertain inputs are shocks **relative** to the uploaded project (`kind: 'factor'` multiplier, `kind: 'delta'` additive rate shift), applied copy-on-write; the base CBM is never mutated.
+- Seeded RNG (`createRng(seed)`) — same inputs + seed = same results. Nothing is persisted.
