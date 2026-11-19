@@ -1,4 +1,4 @@
-import { login, register } from '../services/auth.service.js';
+import { login, register, forgotPassword, resetPassword } from '../services/auth.service.js';
 
 export async function loginUseCase(env, { email, password }) {
   try {
@@ -17,6 +17,28 @@ export async function registerUseCase(env, { email, password, first_name, last_n
   } catch (error) {
     if (!error.status) {
       console.error('[auth.usecase] registerUseCase failed:', error);
+    }
+    throw error;
+  }
+}
+
+export async function forgotPasswordUseCase(env, { email }) {
+  try {
+    return await forgotPassword(env, email);
+  } catch (error) {
+    if (!error.status) {
+      console.error('[auth.usecase] forgotPasswordUseCase failed:', error);
+    }
+    throw error;
+  }
+}
+
+export async function resetPasswordUseCase(env, { token, password }) {
+  try {
+    return await resetPassword(env, token, password);
+  } catch (error) {
+    if (!error.status) {
+      console.error('[auth.usecase] resetPasswordUseCase failed:', error);
     }
     throw error;
   }

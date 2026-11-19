@@ -3,11 +3,12 @@ import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import { FaRandom, FaFileUpload, FaFileDownload, FaFileExcel } from "react-icons/fa";
 import Tooltip from '@mui/material/Tooltip';
 import { useSelector, useDispatch } from 'react-redux';
-import { getCurrentDataInfo, setDataSouce, setSalesData, setSeriesData } from '@/store/forecast.store';
+import { getCurrentDataInfo, setDataSouce, setSalesData, setSeriesData } from '@/store/forecast-playground.store';
 import { exportForecastToExcel } from '@/utils/sims/forecasts/exportForecast';
+import { downloadMinitabTemplate } from '@/utils/sims/forecasts/downloadTemplate';
 import DataConfigPopover from './DataConfigPopover';
 import DataUploadPopover from './DataUploadPopover';
-import { setStartDate, setBehavior, setBehaviorCase, setSalesDataBatch } from '@/store/forecast.store';
+import { setStartDate, setBehavior, setBehaviorCase, setSalesDataBatch } from '@/store/forecast-playground.store';
 import { BEHAVIOR_OPTIONS, DATA_PATTERNS } from '@/config/sims/forecasts/options.config';
 import { faker } from '@faker-js/faker';
 
@@ -120,9 +121,10 @@ function DataOptionsHeader() {
         </Tooltip>
 
         <Tooltip title="Download Template" placement='bottom-end'>
-            <a href="/minitab_template.xlsx" download="minitab_template.xlsx">
-                <FaFileDownload className="text-gray-500 w-[25px] h-[25px] cursor-pointer hover:text-blue-700" />
-            </a>
+            <FaFileDownload
+                className="text-gray-500 w-[25px] h-[25px] cursor-pointer hover:text-blue-700"
+                onClick={() => downloadMinitabTemplate().catch(console.error)}
+            />
         </Tooltip>
 
         <Tooltip title="Upload Data" placement='bottom-end'>
