@@ -1,8 +1,10 @@
-import { findUserByEmail, createUser, findRoleIdByName, findSchoolIdBySlug } from '../models/users.model.js';
+import { findUserByEmail, findUserById, createUser, updateUserPassword, findRoleIdByName, findSchoolIdBySlug } from '../models/users.model.js';
 import { toSafeUser } from '../mappers/user.mapper.js';
 import { hashPassword, verifyPassword } from './password.service.js';
-import { createClerkUserAccount } from './clerk-auth.service.js';
+import { createClerkUserAccount, updateClerkUserPassword } from './clerk-auth.service.js';
 import { buildAuthSession } from './session.service.js';
+import { createPasswordResetToken, verifyPasswordResetToken } from './password-reset.service.js';
+import { sendPasswordResetEmail } from './email.service.js';
 
 const BLOCKED_STATUSES = ['banned', 'deactivated', 'locked'];
 const DEFAULT_SIGNUP_ROLE = 'student';
@@ -86,6 +88,43 @@ export async function register(env, { email, password, first_name: firstName, la
   } catch (error) {
     if (!error.status) {
       console.error('[auth.service] register failed:', error);
+    }
+    throw error;
+  }
+}
+
+export async function forgotPassword(env, email) {
+  try {
+    const user = await findUserByEmail(env.DB, email);
+    // No revela si el email existe - misma respuesta en ambos casos.
+    if (!user || BLOCKED_STATUSES.includes(user.status)) return;
+
+    const token = await createPasswordResetToken(env, user.id);
+    const resetLink = `${env.FRONTEND_URL}/reset-password?token=${token}`;
+    await sendPasswordResetEmail(env, { to: user.email, resetLink });
+  } catch (error) {
+    console.error('[auth.service] forgotPassword failed:', error);
+    throw error;
+  }
+}
+
+export async function resetPassword(env, token, newPassword) {
+  try {
+    const userId = await verifyPasswordResetToken(env, token);
+
+    const user = await findUserById(env.DB, userId);
+    if (!user || BLOCKED_STATUSES.includes(user.status)) {
+      const error = new Error('invalid_reset_token');
+      error.status = 400;
+      throw error;
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+    await updateUserPassword(env.DB, user.id, hashedPassword);
+    await updateClerkUserPassword(env, user.clerk_user_id, newPassword);
+  } catch (error) {
+    if (!error.status) {
+      console.error('[auth.service] resetPassword failed:', error);
     }
     throw error;
   }

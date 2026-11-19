@@ -8,7 +8,7 @@ import AutocorrelationChart from "./components/AutocorrelationChart";
 import {
   INITIAL_DEMAND,
   selectDemand,
-  selectErrorBacktestCount,
+  selectComparisonCount,
   selectMaxYears,
   selectMinYears,
   setDemand,
@@ -26,7 +26,7 @@ const ForecastErrorsContent = () => {
   const demand = useSelector(selectDemand);
   const maxYears = useSelector(selectMaxYears);
   const minYears = useSelector(selectMinYears);
-  const errorBacktestCount = useSelector(selectErrorBacktestCount);
+  const comparedMonths = useSelector(selectComparisonCount);
 
   return (
     // 89vh = 100vh - GenericHeader (6vh) - GenericSubheader (5vh): intenta
@@ -43,7 +43,7 @@ const ForecastErrorsContent = () => {
             setDefault={() => dispatch(setDemand(INITIAL_DEMAND))}
             maxYears={maxYears}
             minYears={minYears}
-            testMonths={errorBacktestCount}
+            testMonths={comparedMonths}
             defaultValue={100}
           />
         </div>
@@ -55,13 +55,13 @@ const ForecastErrorsContent = () => {
             que crecer/encoger via flex-1 nunca le recorta la leyenda. */}
         <div className="flex w-full flex-1 flex-col gap-3 2xl:flex-row">
           <div className="flex w-full flex-1 flex-col gap-3">
-            <div className="flex-1">
+            <div className="">
               <MethodButtons />
             </div>
-            <div className="min-h-[280px] flex-1">
+            <div className="min-h-[550px] flex-1">
               <ForecastChart />
             </div>
-            <div className="min-h-[240px] flex-1">
+            <div className="min-h-[550px] flex-1">
               <AutocorrelationChart />
             </div>
           </div>

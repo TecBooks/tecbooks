@@ -10,9 +10,7 @@ export default function TimelineSliders() {
   const dispatch = useDispatch();
 
   const [pastMarks, setPastMarks] = useState([]);
-  const [futureMarks, setFutureMarks] = useState([]);
   const [pastValue, setPastValue] = useState(null);
-  const [futureValue, setFutureValue] = useState(null);
 
   const effectivePastDate = useSelector((state) => state.forecaster.effectivePastDate);
   const effectiveFutureDate = useSelector((state) => state.forecaster.effectiveFutureDate);
@@ -33,31 +31,12 @@ export default function TimelineSliders() {
     setPastMarks(newPastMarks);
   }, [pastTimelineDates]);
 
-  useEffect(() => {
-    if (!futureTimelineDates) return;
-
-    const newFutureMarks = futureTimelineDates
-      .filter(item => item.date) // remove null/invalid
-      .map(item => ({
-        value: new Date(item.date).getTime(),
-        label: item.name
-      }));
-
-    setFutureMarks(newFutureMarks);
-  }, [futureTimelineDates]);
-
-  // --- Sync Redux effective dates to slider values ---
+  // --- Sync Redux effective past date to slider value ---
   useEffect(() => {
     if (effectivePastDate && pastMarks.length > 0) {
       setPastValue(new Date(effectivePastDate).getTime());
     }
   }, [effectivePastDate, pastMarks]);
-
-  useEffect(() => {
-    if (effectiveFutureDate && futureMarks.length > 0) {
-      setFutureValue(new Date(effectiveFutureDate).getTime());
-    }
-  }, [effectiveFutureDate, futureMarks]);
 
   // --- Handlers ---
   const handlePastDateChange = (event, newValue) => {
@@ -65,21 +44,32 @@ export default function TimelineSliders() {
     if (match) dispatch(setEffectivePastDate(match.date));
   };
 
-  const handleFutureDateChange = (event, newValue) => {
-    const match = futureTimelineDates.find(item => new Date(item.date).getTime() === newValue);
-    if (match) dispatch(setEffectiveFutureDate(match.date));
+  // --- Future slider: años continuos (0-10), hoy + N años directo a
+  // effectiveFutureDate - ya no snapea a marcas fijas (3m/6m/1/2/5/10y).
+  const [forecastYears, setForecastYears] = useState(1);
+
+  useEffect(() => {
+    if (!effectiveFutureDate) return;
+    const diffMs = new Date(effectiveFutureDate).getTime() - Date.now();
+    const years = Math.round(diffMs / (365.25 * 24 * 60 * 60 * 1000));
+    setForecastYears(Math.min(10, Math.max(1, years || 1)));
+  }, [effectiveFutureDate]);
+
+  const handleForecastYearsChange = (event, years) => {
+    setForecastYears(years);
+    const futureDate = new Date();
+    futureDate.setFullYear(futureDate.getFullYear() + years);
+    dispatch(setEffectiveFutureDate(futureDate.toISOString()));
   };
 
-  // --- Calculate min/max for slider ---
+  // --- Calculate min/max for past slider ---
   const minPast = pastMarks.length > 0 ? Math.min(...pastMarks.map(m => m.value)) : 0;
   const maxPast = pastMarks.length > 0 ? Math.max(...pastMarks.map(m => m.value)) : 100;
-  const minFuture = futureMarks.length > 0 ? Math.min(...futureMarks.map(m => m.value)) : 0;
-  const maxFuture = futureMarks.length > 0 ? Math.max(...futureMarks.map(m => m.value)) : 100;
 
   if (!pastTimelineDates || !futureTimelineDates) return <div>Loading...</div>;
 
   const pastLabel = pastMarks.find(m => m.value === pastValue)?.label;
-  const futureLabel = futureMarks.find(m => m.value === futureValue)?.label;
+  const futureLabel = `${forecastYears} year${forecastYears === 1 ? '' : 's'}`;
 
   return (
     <div className='flex items-start'>
@@ -93,7 +83,7 @@ export default function TimelineSliders() {
             value={pastValue}
             onChange={handlePastDateChange}
             step={null}
-            marks={pastMarks}
+            marks={false}
             min={minPast}
             max={maxPast}
             track="inverted" 
@@ -140,17 +130,14 @@ export default function TimelineSliders() {
 
           {/* Future Slider */}
           <Slider
-            value={futureValue}
-            onChange={handleFutureDateChange}
-            step={null}
-            marks={futureMarks}
-            min={minFuture}
-            max={maxFuture}
+            value={forecastYears}
+            onChange={handleForecastYearsChange}
+            min={0}
+            max={10}
+            step={1}
+            marks={false}
             valueLabelDisplay="auto"
-            valueLabelFormat={(value) => {
-              const mark = futureMarks.find(m => m.value === value);
-              return mark ? mark.label : '';
-            }}
+            valueLabelFormat={(value) => `${value}y`}
             sx={{
               color: 'blue',
               width: '45%',

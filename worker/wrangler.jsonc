@@ -6,6 +6,17 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "GAME_ROOM",
+				"class_name": "GameRoom"
+			}
+		]
+	},
+	"migrations": [
+		{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }
+	],
 	"observability": {
 		"enabled": true,
 		"head_sampling_rate": 1
@@ -28,8 +39,18 @@
 		"develop": {
 			"name": "tecbooks-worker-develop",
 			"vars": {
-				"ENVIRONMENT": "develop"
+				"ENVIRONMENT": "develop",
+				"FRONTEND_URL": "https://dev.tecbooks.org",
+				"RESEND_FROM_EMAIL": "noreply@tecbooks.org"
 			},
+			"durable_objects": {
+				"bindings": [
+					{ "name": "GAME_ROOM", "class_name": "GameRoom" }
+				]
+			},
+			"migrations": [
+				{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }
+			],
 			"d1_databases": [
 				{
 					"binding": "DB",
@@ -47,6 +68,8 @@
 		}
 	},
 	"vars": {
-		"ENVIRONMENT": "production"
+		"ENVIRONMENT": "production",
+		"FRONTEND_URL": "https://tecbooks.org",
+		"RESEND_FROM_EMAIL": "noreply@tecbooks.org"
 	}
 }
