@@ -1,3 +1,5 @@
+import { Button } from "@mui/material";
+
 export function TeacherLobby({ code, students, onStart }) {
   return (
     <div>
@@ -12,10 +14,20 @@ export function TeacherLobby({ code, students, onStart }) {
           <li key={s.userId}>{s.name}</li>
         ))}
       </ul>
-
-      <button onClick={onStart} disabled={students.length === 0}>
+      <Button
+        onClick={onStart}
+        disabled={students.length === 0}
+        variant="contained"
+        sx={{
+          bgcolor: "#1e90ff",
+          fontWeight: 600,
+          fontSize: 18,
+          borderRadius: 2,
+          whiteSpace: "nowrap",
+        }}
+      >
         Start game
-      </button>
+      </Button>
     </div>
   );
 }

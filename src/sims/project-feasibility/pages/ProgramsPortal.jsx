@@ -69,9 +69,24 @@ function ProgramsPortal() {
           <Button
             id="create-game"
             component={RouterLink}
-            to="join-game"
+            to="create-game"
             variant="contained"
             startIcon={<AddIcon />}
+            sx={{
+              bgcolor: "#1e90ff",
+              fontWeight: 600,
+              fontSize: 18,
+              borderRadius: 2,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Create Game
+          </Button>
+          <Button
+            id="create-game"
+            component={RouterLink}
+            to="join-game"
+            variant="contained"
             sx={{
               bgcolor: "#1e90ff",
               fontWeight: 600,

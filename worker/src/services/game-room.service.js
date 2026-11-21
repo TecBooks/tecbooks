@@ -25,7 +25,7 @@ export async function createGameRoom(c, roomData, projectIds) {
 
 export async function validateProjects(c, placeholders, projectIds) {
   return await c.env.DB.prepare(
-    `SELECT COUNT(*) AS n FROM projects_temp WHERE project_id IN (${placeholders})`,
+    `SELECT COUNT(*) AS n FROM feasibility_programs WHERE id IN (${placeholders})`,
   )
     .bind(...projectIds)
     .all();
