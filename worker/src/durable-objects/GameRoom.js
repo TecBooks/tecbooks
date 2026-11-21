@@ -1,8 +1,14 @@
 import { DurableObject } from "cloudflare:workers";
+import { endRound } from "../controllers/ws.game.controller.js";
 import { router } from "../routes/ws.gameroom.routes";
 
 export class GameRoom extends DurableObject {
   async fetch(request) {
+    const gameId = Number(request.headers.get("X-Game-Id"));
+    if (!Number.isInteger(gameId) || gameId <= 0) {
+      return new Response("Invalid game room", { status: 400 });
+    }
+
     // eslint-disable-next-line no-undef
     const [client, server] = Object.values(new WebSocketPair());
 
@@ -10,17 +16,44 @@ export class GameRoom extends DurableObject {
       role: request.headers.get("X-Role"),
       userId: request.headers.get("X-User-Id"),
       name: request.headers.get("X-Name"),
+      gameId,
     };
 
     // Hibernation API
     this.ctx.acceptWebSocket(server, [me.role]);
     server.serializeAttachment(me);
 
-    const status = (await this.ctx.storage.get("status")) ?? "lobby";
+    await this.ctx.storage.put("gameId", gameId);
+    const gameState = await this.ctx.storage.get("gameState");
+    const status = gameState?.status ?? "lobby";
     server.send(JSON.stringify({ type: "welcome", you: me, status }));
+    if (gameState?.status === "running") {
+      server.send(
+        JSON.stringify({
+          type: "round_started",
+          currentRound: gameState.currentRound,
+          totalRounds: gameState.totalRounds,
+          timeRoundSeconds: gameState.timeRoundSeconds,
+          endsAt: gameState.endsAt,
+          serverNow: Date.now(),
+        }),
+      );
+    } else if (gameState?.status === "game_over") {
+      server.send(
+        JSON.stringify({
+          type: "game_over",
+          currentRound: gameState.currentRound,
+          totalRounds: gameState.totalRounds,
+        }),
+      );
+    }
     this.broadcastPresence();
 
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  async alarm() {
+    await endRound({ room: this });
   }
 
   async webSocketMessage(ws, message) {

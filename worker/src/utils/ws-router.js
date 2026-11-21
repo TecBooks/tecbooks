@@ -69,7 +69,7 @@ export function createWsRouter() {
     try {
       await run(0);
     } catch (err) {
-      console.error(`[WS Error on ${type}]:`, error);
+      console.error(`[WS Error on ${type}]:`, err);
       ctx.error(err?.message || "Internal server error", "SERVER_ERROR");
     }
   }

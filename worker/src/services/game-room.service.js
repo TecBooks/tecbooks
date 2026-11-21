@@ -1,3 +1,24 @@
+import { findActiveGameRoomForTeacher } from "../models/game-room.model.js";
+
+export async function getCurrentGameForTeacher(env, gameId, teacherId) {
+  const game = await findActiveGameRoomForTeacher(env.DB, gameId, teacherId);
+  if (!game) throw new Error("Active game room not found for teacher");
+
+  if (
+    !Number.isInteger(game.time_round) ||
+    game.time_round <= 0 ||
+    !Number.isInteger(game.num_rounds) ||
+    game.num_rounds <= 0
+  ) {
+    throw new Error("Game room has invalid round settings");
+  }
+
+  return {
+    timeRoundSeconds: game.time_round,
+    totalRounds: game.num_rounds,
+  };
+}
+
 export async function createGameRoom(c, roomData, projectIds) {
   // console.log({ roomData, projectIds });
   const { code, name, userId, numTeams, timePerRound } = roomData;
@@ -94,6 +115,7 @@ export async function connectCode(c) {
   headers.set("X-Role", identity.role);
   headers.set("X-User-Id", String(identity.id));
   headers.set("X-Name", identity.name);
+  headers.set("X-Game-Id", String(room.game_id));
 
   return stub.fetch(new Request(c.req.raw, { headers }));
 }

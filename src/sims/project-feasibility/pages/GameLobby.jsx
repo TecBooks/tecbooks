@@ -9,10 +9,8 @@ export default function GameLobby() {
 
   const token = sessionStorage.getItem(`session:${code}`); // ?? getAuthToken();
 
-  const { connected, me, online, gameStatus, send } = useGameSocket(
-    code,
-    token,
-  );
+  const { connected, me, online, gameStatus, round, timeLeft, send } =
+    useGameSocket(code, token);
   const roomCodeMessage = (
     <Typography variant="h6" component="p">
       Room code: <strong>{code}</strong>
@@ -37,7 +35,17 @@ export default function GameLobby() {
     return (
       <>
         {roomCodeMessage}
-        <p>Game in progress…</p>
+        <p>
+          Round {round?.currentRound ?? "…"} of {round?.totalRounds ?? "…"}
+        </p>
+        <p>Time left: {timeLeft ?? "…"} seconds</p>
+      </>
+    );
+  if (gameStatus === "game_over")
+    return (
+      <>
+        {roomCodeMessage}
+        <p>Game over!</p>
       </>
     );
 
