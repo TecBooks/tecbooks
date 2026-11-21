@@ -177,6 +177,7 @@ export async function connectCode(c) {
   headers.set("X-Role", identity.role);
   headers.set("X-User-Id", String(identity.id));
   headers.set("X-Name", identity.name);
+  headers.set("X-Game-Id", String(room.game_id));
 
   return stub.fetch(new Request(c.req.raw, { headers }));
 }

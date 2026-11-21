@@ -5,6 +5,7 @@ import { router } from "../routes/ws.gameroom.routes";
 export class GameRoom extends DurableObject {
   async fetch(request) {
     const gameId = Number(request.headers.get("X-Game-Id"));
+    console.log({ gameId });
     if (!Number.isInteger(gameId) || gameId <= 0) {
       return new Response("Invalid game room", { status: 400 });
     }
