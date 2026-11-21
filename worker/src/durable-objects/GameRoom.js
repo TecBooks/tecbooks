@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { router } from "../routes/ws.gameroom.routes";
 
 export class GameRoom extends DurableObject {
   async fetch(request) {
@@ -23,33 +24,14 @@ export class GameRoom extends DurableObject {
   }
 
   async webSocketMessage(ws, message) {
-    const who = ws.deserializeAttachment();
-    let msg;
-    try {
-      msg = JSON.parse(message);
-    } catch {
-      return;
-    }
-
-    switch (msg.type) {
-      case "start_game":
-        if (who.role !== "teacher") return;
-        await this.ctx.storage.put("status", "running");
-        this.broadcast({ type: "game_started" });
-        break;
-
-      case "action":
-        if (who.role !== "student") return;
-        this.broadcast({ type: "action", by: who.name, payload: msg.payload });
-        break;
-    }
+    await router.dispatch(this, ws, message);
   }
 
   async webSocketClose(ws, code) {
     try {
       ws.close(code, "closing");
     } catch {
-      //
+      console.error("Error closing websocket");
     } // some codes (1005/1006) can't be echoed back
     this.broadcastPresence(ws);
   }
