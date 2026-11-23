@@ -56,6 +56,31 @@ function ProjectFeasibility() {
                 </Box>
               }
             />
+
+            <Route
+              path="programs/create-game"
+              element={
+                <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+                  <CreateGame />
+                </Box>
+              }
+            />
+            <Route
+              path="programs/join-game"
+              element={
+                <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+                  <JoinLobby />
+                </Box>
+              }
+            />
+            <Route
+              path="game/:code"
+              element={
+                <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+                  <GameLobby />
+                </Box>
+              }
+            />
           </Route>
         </Routes>
       </Box>
