@@ -8,7 +8,21 @@ export function useGameSocket(code, token) {
   const [me, setMe] = useState(null);
   const [online, setOnline] = useState([]);
   const [gameStatus, setGameStatus] = useState("lobby");
+  const [round, setRound] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(null);
   const wsRef = useRef(null);
+
+  useEffect(() => {
+    if (!round) return undefined;
+
+    const updateTimeLeft = () => {
+      setTimeLeft(Math.max(0, Math.ceil((round.endsAt - Date.now()) / 1000)));
+    };
+
+    updateTimeLeft();
+    const timer = setInterval(updateTimeLeft, 1000);
+    return () => clearInterval(timer);
+  }, [round]);
 
   useEffect(() => {
     if (!token) return;
@@ -36,6 +50,18 @@ export function useGameSocket(code, token) {
           case "game_started":
             setGameStatus("running");
             break;
+          case "round_started":
+            setGameStatus("running");
+            setRound({
+              currentRound: msg.currentRound,
+              totalRounds: msg.totalRounds,
+              endsAt: msg.endsAt - (msg.serverNow - Date.now()),
+            });
+            break;
+          case "game_over":
+            setGameStatus("game_over");
+            setTimeLeft(0);
+            break;
         }
       };
 
@@ -59,5 +85,5 @@ export function useGameSocket(code, token) {
     }
   }, []);
 
-  return { connected, me, online, gameStatus, send };
+  return { connected, me, online, gameStatus, round, timeLeft, send };
 }

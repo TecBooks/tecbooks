@@ -40,10 +40,15 @@ function ProjectFeasibility() {
           <Route element={<RequireAuth />}>
             <Route element={<ProgramsWorkspace />}>
               <Route path="programs" element={<ProgramsPortal />} />
+              <Route path="game/:code" element={<GameLobby />} />
+
               <Route
                 path="programs/:programId/:projectId"
                 element={<ProjectDashboard />}
               />
+
+              <Route path="programs/join-game" element={<JoinLobby />} />
+              <Route path="programs/create-game" element={<CreateGame />} />
             </Route>
 
             <Route

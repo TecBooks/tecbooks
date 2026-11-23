@@ -80,14 +80,13 @@ function ProgramsPortal() {
               whiteSpace: "nowrap",
             }}
           >
-            Create Lobby
+            Create Game
           </Button>
           <Button
-            id="join-game"
+            id="create-game"
             component={RouterLink}
             to="join-game"
             variant="contained"
-            startIcon={<AddIcon />}
             sx={{
               bgcolor: "#1e90ff",
               fontWeight: 600,
