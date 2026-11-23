@@ -1,8 +1,9 @@
-export async function listProjects(db) {
+export async function listProjects(db, { createdBy }) {
   const { results } = await db
     .prepare(
-      "SELECT project_id AS id, project AS name FROM projects_temp ORDER BY project",
+      "SELECT id, name FROM feasibility_programs WHERE created_by = ? ORDER BY name",
     )
+    .bind(createdBy)
     .all();
   return results;
 }

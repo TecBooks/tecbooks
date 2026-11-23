@@ -2,7 +2,9 @@ import { listProjects } from "../services/projects.service.js";
 
 export async function getProjects(c) {
   try {
-    const projects = await listProjects(c.env.DB);
+    const projects = await listProjects(c.env.DB, {
+      createdBy: c.get("userId"),
+    });
     return c.json(projects);
   } catch (error) {
     console.error("getProjects failed:", error);
