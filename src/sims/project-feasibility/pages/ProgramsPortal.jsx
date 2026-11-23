@@ -83,7 +83,7 @@ function ProgramsPortal() {
             Create Game
           </Button>
           <Button
-            id="create-game"
+            id="join-game"
             component={RouterLink}
             to="join-game"
             variant="contained"
