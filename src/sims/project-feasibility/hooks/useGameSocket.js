@@ -6,6 +6,7 @@ const WS_BASE = workerApi.defaults.baseURL.replace(/^http/, "ws");
 export function useGameSocket(code, token) {
   const [connected, setConnected] = useState(false);
   const [me, setMe] = useState(null);
+  const [projectSelection, setProjectSelection] = useState(null);
   const [online, setOnline] = useState([]);
   const [gameStatus, setGameStatus] = useState("lobby");
   const [round, setRound] = useState(null);
@@ -42,6 +43,7 @@ export function useGameSocket(code, token) {
         switch (msg.type) {
           case "welcome":
             setMe(msg.you);
+            setProjectSelection(msg.projectSelection);
             setGameStatus(msg.status);
             break;
           case "presence":
@@ -85,5 +87,14 @@ export function useGameSocket(code, token) {
     }
   }, []);
 
-  return { connected, me, online, gameStatus, round, timeLeft, send };
+  return {
+    connected,
+    me,
+    projectSelection,
+    online,
+    gameStatus,
+    round,
+    timeLeft,
+    send,
+  };
 }

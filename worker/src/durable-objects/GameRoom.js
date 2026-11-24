@@ -19,6 +19,24 @@ export class GameRoom extends DurableObject {
       name: request.headers.get("X-Name"),
       gameId,
     };
+    const projectSelection = {
+      programId: Number(request.headers.get("X-Program-Id")),
+      programName: decodeURIComponent(
+        request.headers.get("X-Program-Name") ?? "",
+      ),
+      projectId: Number(request.headers.get("X-Project-Id")),
+      projectName: decodeURIComponent(
+        request.headers.get("X-Project-Name") ?? "",
+      ),
+      gameId: Number(request.headers.get("X-Project-Game-Id")),
+    };
+    const hasProjectSelection =
+      Number.isInteger(projectSelection.programId) &&
+      projectSelection.programId > 0 &&
+      Number.isInteger(projectSelection.projectId) &&
+      projectSelection.projectId > 0 &&
+      Number.isInteger(projectSelection.gameId) &&
+      projectSelection.gameId > 0;
 
     // Hibernation API
     this.ctx.acceptWebSocket(server, [me.role]);
@@ -27,7 +45,14 @@ export class GameRoom extends DurableObject {
     await this.ctx.storage.put("gameId", gameId);
     const gameState = await this.ctx.storage.get("gameState");
     const status = gameState?.status ?? "lobby";
-    server.send(JSON.stringify({ type: "welcome", you: me, status }));
+    server.send(
+      JSON.stringify({
+        type: "welcome",
+        you: me,
+        status,
+        projectSelection: hasProjectSelection ? projectSelection : null,
+      }),
+    );
     if (gameState?.status === "running") {
       server.send(
         JSON.stringify({
