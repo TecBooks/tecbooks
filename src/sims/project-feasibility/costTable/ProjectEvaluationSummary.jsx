@@ -172,8 +172,6 @@ function ProjectEvaluationSummary({ project, currency }) {
         </Alert>
       )}
 
-      <KpiAlerts alerts={kpiAlerts} />
-
       <Box sx={{ mt: 3, maxWidth: 240 }}>
         <PercentField
           label="Risk Premium"
@@ -182,6 +180,8 @@ function ProjectEvaluationSummary({ project, currency }) {
           helperText="No source field in InputNovus - enter as a percentage (e.g. 10 = 10%)"
         />
       </Box>
+
+      <KpiAlerts alerts={kpiAlerts} />
     </Box>
   );
 }

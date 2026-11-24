@@ -38,7 +38,7 @@ const isNum = (value) => typeof value === "number" && Number.isFinite(value);
 function listYears(items, format) {
   const shown = items.slice(0, MAX_LISTED_YEARS).map(format).join("; ");
   const rest = items.length - MAX_LISTED_YEARS;
-  return rest > 0 ? `${shown}; y ${rest} año(s) más` : shown;
+  return rest > 0 ? `${shown}; and ${rest} more year(s)` : shown;
 }
 
 function demandContext(cbm) {
@@ -69,19 +69,19 @@ export function checkDemandJump(cbm, ctx, { netSalesByYear, currency }, threshol
   return {
     id: "demand-jump",
     severity: "warning",
-    title: `La demanda proyectada es hasta ${ratio(Math.max(...jumps.map((j) => j.r)))} el promedio histórico`,
+    title: `Projected demand is up to ${ratio(Math.max(...jumps.map((j) => j.r)))} the historical average`,
     reasons: [
-      `Histórico de COs: ${historyText} (promedio ${units(historyAvg)} unidades/año).`,
-      `Años que pasan de ${ratio(thresholds.demandJumpRatio)} ese promedio: ${listYears(
+      `COs history: ${historyText} (average ${units(historyAvg)} units/year).`,
+      `Years above ${ratio(thresholds.demandJumpRatio)} that average: ${listYears(
         jumps,
         (j) => `${j.year}: ${units(j.orders)} (${ratio(j.r)})`,
       )}.`,
       isNum(sales)
-        ? `Ventas = unidades × precio: en ${first.year} las ventas netas suben a ${formatCurrency(sales, currency)}, y eso sube la TIR y el VNA.`
-        : "Ventas = unidades × precio: más unidades suben directamente la TIR y el VNA.",
-      "Revisa que esos totales sean unidades del producto y no otra escala o un error de captura.",
+        ? `Sales = units × price: in ${first.year} net sales rise to ${formatCurrency(sales, currency)}, which pushes TIR and VNA up.`
+        : "Sales = units × price: more units push TIR and VNA up directly.",
+      "Check that these totals are product units and not a different scale or a data-entry error.",
     ],
-    source: "Hoja COs, columnas Histórico y Año Cero | Total",
+    source: "COs sheet, Histórico and Año Cero | Total columns",
   };
 }
 
@@ -110,16 +110,16 @@ export function checkDemandIgnoresGrowth(cbm, ctx, _metrics, thresholds) {
   return {
     id: "demand-ignores-growth",
     severity: "warning",
-    title: `Los totales de COs no siguen la Demanda Anual de ${pct(growth)}`,
+    title: `COs totals don't follow the ${pct(growth)} annual demand growth`,
     reasons: [
-      `Con la Demanda Anual de ${pct(growth)} (Premisas), ${first.year} daría ${units(first.proj)} unidades, pero COs trae ${units(first.total)} (${first.gap > 0 ? "+" : ""}${pct(first.gap)}).`,
-      `Años que se separan más de ${pct(thresholds.demandGrowthTolerance)} de la proyección: ${listYears(
+      `With the ${pct(growth)} annual demand growth (Premisas), ${first.year} would be ${units(first.proj)} units, but COs has ${units(first.total)} (${first.gap > 0 ? "+" : ""}${pct(first.gap)}).`,
+      `Years more than ${pct(thresholds.demandGrowthTolerance)} away from the projection: ${listYears(
         gaps,
         (g) => `${g.year}: ${units(g.total)} vs ${units(g.proj)}`,
       )}.`,
-      "Cuando COs trae un total para un año, la app usa ese total y no aplica la tasa de crecimiento. Por eso la Demanda Anual no tiene efecto en esos años.",
+      "When COs has a total for a year, the app uses that total and does not apply the growth rate, so the annual demand growth has no effect on those years.",
     ],
-    source: "Hoja COs (Año Cero | Total) y Premisas (Demanda Anual)",
+    source: "COs sheet (Año Cero | Total) and Premisas (Demanda Anual)",
   };
 }
 
@@ -140,16 +140,16 @@ export function checkDemandOverCapacity(cbm, ctx) {
   return {
     id: "demand-over-capacity",
     severity: "warning",
-    title: `La demanda supera la capacidad anual en ${over.length} año(s)`,
+    title: `Demand exceeds annual capacity in ${over.length} year(s)`,
     reasons: [
-      `Demanda contra capacidad: ${listYears(
+      `Demand vs capacity: ${listYears(
         over,
         (o) => `${o.year}: ${units(o.orders)} vs ${units(o.capacity)} (${pct(o.orders / o.capacity)})`,
       )}.`,
-      "La capacidad sale de la hoja Capacidad: unidades por hora × horas por turno × turnos × líneas × días × semanas × meses.",
-      "La app no limita las ventas a la capacidad: vende todas las unidades de la demanda aunque la planta no pueda producirlas, así que las ventas de esos años están sobreestimadas.",
+      "Capacity comes from the Capacidad sheet: units per hour × hours per shift × shifts × lines × days × weeks × months.",
+      "The app does not cap sales at capacity: it sells every unit of demand even if the plant can't produce it, so sales in those years are overstated.",
     ],
-    source: "Hojas Capacidad y COs",
+    source: "Capacidad and COs sheets",
   };
 }
 
@@ -163,7 +163,7 @@ export function checkIrrOverLimit(cbm, _ctx, { irr, flowByYear, rowByYear, capex
   if (years.length >= 2) {
     const [y0, y1] = years;
     reasons.push(
-      `El flujo de ${y0} es ${formatCurrency(flowByYear[y0], currency)} y el de ${y1} es ${formatCurrency(flowByYear[y1], currency)}. La TIR sale alta cuando el flujo negativo inicial es chico frente a los positivos que siguen.`,
+      `The ${y0} cash flow is ${formatCurrency(flowByYear[y0], currency)} and the ${y1} cash flow is ${formatCurrency(flowByYear[y1], currency)}. TIR comes out high when the initial negative flow is small compared to the positive flows that follow.`,
     );
   }
 
@@ -175,24 +175,24 @@ export function checkIrrOverLimit(cbm, _ctx, { irr, flowByYear, rowByYear, capex
   );
   if (loan > 0 && capex > 0) {
     reasons.push(
-      `El préstamo de ${y0} (${formatCurrency(loan, currency)}) cubre ${pct(loan / capex)} de la inversión de ese año (${formatCurrency(capex, currency)}). Como la plantilla lo cuenta como entrada, el año 0 casi no refleja la inversión.`,
+      `The ${y0} loan (${formatCurrency(loan, currency)}) covers ${pct(loan / capex)} of that year's investment (${formatCurrency(capex, currency)}). Since the template counts it as an inflow, year 0 barely reflects the investment.`,
     );
   }
 
   reasons.push(
-    "El Flujo Neto de la plantilla es acumulado: cada año suma el saldo del anterior, así que una buena racha de ventas se arrastra a todos los años siguientes.",
+    "The template's Net Cash Flow is cumulative: each year adds the previous year's balance, so a strong sales run carries over into every following year.",
   );
 
   if (otherAlerts.length > 0) {
-    reasons.push(`Causas en los datos de entrada: ${otherAlerts.map((alert) => alert.title).join("; ")}.`);
+    reasons.push(`Causes in the input data: ${otherAlerts.map((alert) => alert.title).join("; ")}.`);
   }
 
   return {
     id: "irr-over-limit",
     severity: "error",
-    title: `La TIR (${pct(irr)}) pasa el límite de ${pct(thresholds.maxIrr)}`,
+    title: `TIR (${pct(irr)}) is above the ${pct(thresholds.maxIrr)} limit`,
     reasons,
-    source: "Tabla de flujo (Flujo Neto) y hojas de entrada",
+    source: "Cash flow table (Net Cash Flow) and input sheets",
   };
 }
 

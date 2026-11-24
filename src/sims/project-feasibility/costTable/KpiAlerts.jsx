@@ -15,7 +15,7 @@ function KpiAlerts({ alerts }) {
               <li key={reason}>{reason}</li>
             ))}
           </ul>
-          <p className="mt-1 text-[13px] opacity-80">Revisar: {alert.source}</p>
+          <p className="mt-1 text-[13px] opacity-80">Check: {alert.source}</p>
         </Alert>
       ))}
     </Stack>
