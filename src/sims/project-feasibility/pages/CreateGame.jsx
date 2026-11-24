@@ -85,7 +85,7 @@ export default function CreateGame() {
               >
                 {projects.map((p) => (
                   <MenuItem key={p.id} value={p.id}>
-                    {p.name}
+                    {p.programName ? `${p.name} (${p.programName})` : p.name}
                   </MenuItem>
                 ))}
               </Select>

@@ -1,16 +1,25 @@
-import { Typography } from "@mui/material";
+import { Alert, Box, Typography } from "@mui/material";
 import { useParams } from "react-router-dom";
 import { useGameSocket } from "../hooks/useGameSocket";
 import { TeacherLobby } from "@/components/sims/program/game/TeacherLobby";
 import { StudentLobby } from "@/components/sims/program/game/StudentLobby";
+import ProjectDashboard from "./ProjectDashboard";
 
 export default function GameLobby() {
   const { code } = useParams();
 
   const token = sessionStorage.getItem(`session:${code}`); // ?? getAuthToken();
 
-  const { connected, me, online, gameStatus, round, timeLeft, send } =
-    useGameSocket(code, token);
+  const {
+    connected,
+    me,
+    projectSelection,
+    online,
+    gameStatus,
+    round,
+    timeLeft,
+    send,
+  } = useGameSocket(code, token);
   const roomCodeMessage = (
     <Typography variant="h6" component="p">
       Room code: <strong>{code}</strong>
@@ -31,14 +40,27 @@ export default function GameLobby() {
         <p>{connected ? "Loading…" : "Connecting…"}</p>
       </>
     );
-  if (gameStatus === "running")
+  if (gameStatus === "running" && !projectSelection)
     return (
       <>
         {roomCodeMessage}
-        <p>
-          Round {round?.currentRound ?? "…"} of {round?.totalRounds ?? "…"}
-        </p>
-        <p>Time left: {timeLeft ?? "…"} seconds</p>
+        <Alert severity="error">
+          The selected project for this game could not be loaded.
+        </Alert>
+      </>
+    );
+  if (gameStatus === "running")
+    return (
+      <>
+        <Box sx={{ px: 4, pt: 2 }}>
+          {roomCodeMessage}
+          <Typography>
+            Round {round?.currentRound ?? "…"} of {round?.totalRounds ?? "…"}
+            {" · "}
+            Time left: {timeLeft ?? "…"} seconds
+          </Typography>
+        </Box>
+        <ProjectDashboard gameSelection={projectSelection} />
       </>
     );
   if (gameStatus === "game_over")

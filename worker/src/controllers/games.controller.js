@@ -19,7 +19,7 @@ export async function createGame(c) {
   const { name, numTeams, timePerRound, selectedTags } = await c.req.json();
 
   // Validación básica
-  if (!name || !Array.isArray(selectedTags) || selectedTags.length === 0) {
+  if (!name || !Array.isArray(selectedTags) || selectedTags.length !== 1) {
     return c.json({ error: "Invalid payload" }, 400);
   }
 
@@ -31,7 +31,12 @@ export async function createGame(c) {
 
   // Verificar que todos existan
   const placeholders = projectIds.map(() => "?").join(",");
-  const { results } = await validateProjects(c, placeholders, projectIds);
+  const { results } = await validateProjects(
+    c,
+    placeholders,
+    projectIds,
+    userId,
+  );
 
   if (results[0].n !== projectIds.length) {
     return c.json({ error: "Some projects do not exist" }, 400);
@@ -81,7 +86,10 @@ export async function getGameRoom(c) {
     );
   }
 
-  return c.json({ code: room.code });
+  return c.json({
+    code: room.code,
+    projectSelection: toProjectSelection(room),
+  });
 }
 
 export async function joinGameRoom(c) {
@@ -178,8 +186,24 @@ export async function connectCode(c) {
   headers.set("X-User-Id", String(identity.id));
   headers.set("X-Name", identity.name);
   headers.set("X-Game-Id", String(room.game_id));
+  headers.set("X-Program-Id", String(room.program_id ?? ""));
+  headers.set("X-Project-Id", String(room.project_id ?? ""));
+  headers.set("X-Project-Game-Id", String(room.project_game_id ?? ""));
+  headers.set("X-Program-Name", encodeURIComponent(room.program_name ?? ""));
+  headers.set("X-Project-Name", encodeURIComponent(room.project_name ?? ""));
 
   return stub.fetch(new Request(c.req.raw, { headers }));
+}
+
+function toProjectSelection(room) {
+  if (!room.project_id || !room.program_id || !room.project_game_id) return null;
+  return {
+    programId: room.program_id,
+    programName: room.program_name,
+    projectId: room.project_id,
+    projectName: room.project_name,
+    gameId: room.project_game_id,
+  };
 }
 
 async function getRoom(c) {
