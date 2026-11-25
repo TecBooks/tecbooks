@@ -1,4 +1,28 @@
-import { findActiveGameRoomForTeacher } from "../models/game-room.model.js";
+import {
+  closeGameRoomById,
+  closeGameRoomsCreatedBefore,
+  findActiveGameRoomForTeacher,
+} from "../models/game-room.model.js";
+
+// Rooms nobody finished (teacher left mid-lobby, etc.) get closed by the cron
+// after this long, so their join code stops working.
+export const STALE_ROOM_MAX_AGE_HOURS = 24;
+
+export async function closeGameRoom(env, gameId) {
+  await closeGameRoomById(env.DB, gameId, new Date().toISOString());
+}
+
+export async function closeStaleGameRooms(env, now = Date.now()) {
+  const cutoff = new Date(
+    now - STALE_ROOM_MAX_AGE_HOURS * 60 * 60 * 1000,
+  ).toISOString();
+  const result = await closeGameRoomsCreatedBefore(
+    env.DB,
+    cutoff,
+    new Date(now).toISOString(),
+  );
+  return result?.meta?.changes ?? 0;
+}
 
 export async function getCurrentGameForTeacher(env, gameId, teacherId) {
   const game = await findActiveGameRoomForTeacher(env.DB, gameId, teacherId);

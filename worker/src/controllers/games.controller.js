@@ -1,5 +1,6 @@
 import authenticate, { resolveGameIdentity } from "../utils/authenticate";
 import { createGameSessionToken } from "../utils/game-session-token";
+import { rejectWebSocket, WS_CLOSE } from "../utils/ws-close-codes";
 import {
   createGameRoom,
   findActiveGameRoom,
@@ -165,17 +166,11 @@ export async function connectCode(c) {
 
   const room = await findActiveGameRoom(c.env.DB, c.req.param("code"));
   if (!room) {
-    return c.json(
-      {
-        error:
-          "Sorry, the game room you are looking for does not exists or has been cloesd",
-      },
-      404,
-    );
+    return rejectWebSocket(WS_CLOSE.ROOM_NOT_FOUND, "Room not found or closed");
   }
 
   const identity = await authenticate(c, room);
-  if (!identity) return c.text("Unauthorized", 401);
+  if (!identity) return rejectWebSocket(WS_CLOSE.UNAUTHORIZED, "Unauthorized");
 
   const stub = c.env.GAME_ROOM.get(
     c.env.GAME_ROOM.idFromName(`games-${room.game_id}`),

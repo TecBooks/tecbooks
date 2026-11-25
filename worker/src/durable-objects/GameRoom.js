@@ -2,7 +2,21 @@ import { DurableObject } from "cloudflare:workers";
 import { endRound } from "../controllers/ws.game.controller.js";
 import { router } from "../routes/ws.gameroom.routes";
 
+// Heartbeat: the client sends the raw string "ping" every HEARTBEAT interval
+// (see useGameSocket.js). The runtime answers "pong" itself without waking
+// the object, so heartbeats cost no duration and don't break hibernation.
+export const HEARTBEAT_PING = "ping";
+export const HEARTBEAT_PONG = "pong";
+
 export class GameRoom extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.ctx.setWebSocketAutoResponse(
+      // eslint-disable-next-line no-undef
+      new WebSocketRequestResponsePair(HEARTBEAT_PING, HEARTBEAT_PONG),
+    );
+  }
+
   async fetch(request) {
     const gameId = Number(request.headers.get("X-Game-Id"));
     console.log({ gameId });
@@ -42,7 +56,10 @@ export class GameRoom extends DurableObject {
     this.ctx.acceptWebSocket(server, [me.role]);
     server.serializeAttachment(me);
 
-    await this.ctx.storage.put("gameId", gameId);
+    // Write once per object, not on every (re)connect.
+    if ((await this.ctx.storage.get("gameId")) !== gameId) {
+      await this.ctx.storage.put("gameId", gameId);
+    }
     const gameState = await this.ctx.storage.get("gameState");
     const status = gameState?.status ?? "lobby";
     server.send(

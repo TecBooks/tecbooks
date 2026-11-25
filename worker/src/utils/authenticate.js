@@ -1,20 +1,13 @@
 import { verifyGameSessionToken } from "./game-session-token";
 
+// Game-room identity comes only from the signed session JWT issued by
+// POST /api/games/rooms/:code/join (students) or by room creation (teacher).
+// No D1 lookup here: this runs on every WebSocket (re)connect, so it must stay
+// free of reads. (The old `game_team_students.session_token` lookup was an
+// unindexed full scan that never matched game rooms — that table belongs to
+// the Novus `game_teams` schema, not to `game_rooms`.)
 export async function resolveGameIdentity(c, token, room) {
   if (!token) return null;
-
-  const student = await c.env.DB.prepare(
-    `
-      SELECT s.id, s.display_name FROM game_team_students s
-      JOIN game_teams t ON t.id = s.game_team_id
-      WHERE s.session_token = ? AND t.game_id = ?
-    `,
-  )
-    .bind(token, room.game_id)
-    .first();
-  if (student)
-    return { role: "student", id: student.id, name: student.display_name };
-
   return verifyGameSessionToken(c.env.JWT_SECRET, token, room);
 }
 

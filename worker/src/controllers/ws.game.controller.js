@@ -1,4 +1,7 @@
-import { getCurrentGameForTeacher } from "../services/game-room.service.js";
+import {
+  closeGameRoom,
+  getCurrentGameForTeacher,
+} from "../services/game-room.service.js";
 
 export async function startGame({ room, user }) {
   const gameId = await room.ctx.storage.get("gameId");
@@ -44,6 +47,9 @@ export async function endRound({ room }) {
   if (gameState.currentRound >= gameState.totalRounds) {
     const finishedState = { ...gameState, status: "game_over" };
     await room.ctx.storage.put("gameState", finishedState);
+    // Persist only the end of the game to D1 (not every state change): the
+    // join code stops working and the cron won't have to close it.
+    await closeGameRoom(room.env, await room.ctx.storage.get("gameId"));
     room.broadcast({
       type: "game_over",
       currentRound: finishedState.currentRound,

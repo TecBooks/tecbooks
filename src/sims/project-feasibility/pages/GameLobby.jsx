@@ -18,7 +18,10 @@ export default function GameLobby() {
     gameStatus,
     round,
     timeLeft,
+    closeReason,
+    lastError,
     send,
+    reconnect,
   } = useGameSocket(code, token);
   const roomCodeMessage = (
     <Typography variant="h6" component="p">
@@ -31,6 +34,15 @@ export default function GameLobby() {
       <>
         {roomCodeMessage}
         <p>You need to join this game first.</p>
+      </>
+    );
+  // The room gets closed in D1 when the game ends, so a reconnect after
+  // game over is rejected as room_not_found - keep showing the result.
+  if (closeReason && gameStatus !== "game_over")
+    return (
+      <>
+        {roomCodeMessage}
+        <ConnectionClosedAlert reason={closeReason} onRetry={reconnect} />
       </>
     );
   if (!me)

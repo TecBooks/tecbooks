@@ -33,6 +33,7 @@ export function createWsRouter() {
       parsed = JSON.parse(text);
     } catch {
       ws.send(JSON.stringify({ type: "error", message: "Invalid JSON" }));
+      return;
     }
 
     const type = parsed?.type;

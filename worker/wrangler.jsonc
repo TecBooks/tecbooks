@@ -17,6 +17,10 @@
 	"migrations": [
 		{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }
 	],
+	// Daily 09:00 UTC (03:00 CDMX): close stale game rooms (see index.js `scheduled`).
+	"triggers": {
+		"crons": ["0 9 * * *"]
+	},
 	"observability": {
 		"enabled": true,
 		"head_sampling_rate": 1
@@ -38,6 +42,9 @@
 	"env": {
 		"develop": {
 			"name": "tecbooks-worker-develop",
+			"triggers": {
+				"crons": ["0 9 * * *"]
+			},
 			"vars": {
 				"ENVIRONMENT": "develop",
 				"FRONTEND_URL": "https://dev.tecbooks.org",
