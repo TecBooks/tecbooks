@@ -1,7 +1,7 @@
-import { HORIZON_LENGTH, HORIZON_YEARS } from '../constants.js'
+import { HORIZON_LENGTH, HORIZON_YEARS, MAX_SHEET_YEAR, MIN_SHEET_YEAR } from '../constants.js'
 
-export function emptyYearSeries() {
-  return Array.from({ length: HORIZON_LENGTH }, () => undefined)
+export function emptyYearSeries(length = HORIZON_LENGTH) {
+  return Array.from({ length }, () => undefined)
 }
 
 export function normalizeLabel(value) {
@@ -47,20 +47,50 @@ export function toStringOrUndefined(value) {
   return String(value).trim()
 }
 
-export function yearColumnMap(headerRow) {
+function asSheetYear(cell) {
+  const year = typeof cell === 'number' ? cell : Number(String(cell ?? '').trim())
+  return Number.isInteger(year) && year >= MIN_SHEET_YEAR && year <= MAX_SHEET_YEAR ? year : null
+}
+
+/**
+ * A row is a year header when it has at least 2 year-like cells and they are
+ * strictly increasing left to right (2026 | 2027 | ...). The "increasing"
+ * rule keeps a data row that repeats a value like 2000 from passing as a
+ * header. A header that skips a year (2026 | 2028) still counts - the gap is
+ * reported by the year report, not hidden.
+ *
+ * Returns { years: [...in column order], columns: {year: colIndex} } or null.
+ */
+export function detectYearHeader(row) {
+  if (!Array.isArray(row)) return null
+  const years = []
+  const columns = {}
+  row.forEach((cell, index) => {
+    const year = asSheetYear(cell)
+    if (year === null) return
+    years.push(year)
+    columns[year] = index
+  })
+  if (years.length < 2) return null
+  for (let i = 1; i < years.length; i += 1) {
+    if (years[i] <= years[i - 1]) return null
+  }
+  return { years, columns }
+}
+
+/** {year: colIndex} for the horizon years this header has (others dropped). */
+export function yearColumnMap(headerRow, years = HORIZON_YEARS) {
+  const header = detectYearHeader(headerRow)
+  if (!header) return {}
   const map = {}
-  if (!Array.isArray(headerRow)) return map
-  headerRow.forEach((cell, index) => {
-    const year = Number(cell)
-    if (HORIZON_YEARS.includes(year)) {
-      map[year] = index
-    }
+  years.forEach((year) => {
+    if (year in header.columns) map[year] = header.columns[year]
   })
   return map
 }
 
-export function seriesFromRow(row, colMap) {
-  return HORIZON_YEARS.map((year) => {
+export function seriesFromRow(row, colMap, years = HORIZON_YEARS) {
+  return years.map((year) => {
     if (!(year in colMap)) return undefined
     return toNumberOrUndefined(row?.[colMap[year]])
   })

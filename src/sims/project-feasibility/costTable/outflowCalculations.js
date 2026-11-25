@@ -1,6 +1,7 @@
 import {
   cbmToOperatingExpenseInputs,
   mapAssetsToYears,
+  timelineStart,
 } from "./cbmToCostTableInputs";
 import { assetsCapexInYear } from "@/utils/dashboard/assetSchedule.js";
 import { Logger } from "../utils/logger.js";
@@ -66,7 +67,7 @@ export function computeCapexByYear(cbm, years) {
   const extraAssetsByCategory = Object.fromEntries(
     extraCategories.map((category) => [
       category,
-      mapAssetsToYears(categories[category], years),
+      mapAssetsToYears(categories[category], years, timelineStart(cbm)),
     ]),
   );
 

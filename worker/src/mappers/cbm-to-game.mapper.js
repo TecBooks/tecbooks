@@ -18,11 +18,6 @@ function firstFinite(series) {
   return null;
 }
 
-function sumSeries(series) {
-  if (!Array.isArray(series)) return 0;
-  return series.reduce((total, value) => total + (asNumber(value, 0) ?? 0), 0);
-}
-
 /**
  * Same formula as applyDerivedBase.js's capacityForIndex (Capacidad sheet's
  * own "Anual Capacity" row) - duplicated here since the worker doesn't
@@ -141,7 +136,25 @@ function mapDepreciationCategories(cbm, years) {
   return categories;
 }
 
-function mapAssets(cbm) {
+/**
+ * acquisitionByYear[i] is the asset's value in years[i] (the project's own
+ * horizon, year zero .. +10). Each cost is saved with that real year.
+ *
+ * unitPrice = the asset's first non-zero value, NOT the sum of the series:
+ * Inversion repeats the same book value in every year column, so summing
+ * gave value × 10 (29.2M → 292M), and game-to-cbm used that sum as the
+ * year-zero fallback.
+ */
+function mapAssetSeries(acquisitionByYear, years) {
+  const series = Array.isArray(acquisitionByYear) ? acquisitionByYear : [];
+  return {
+    unitPrice: series.map((value) => asNumber(value, 0)).find((value) => value !== 0) ?? 0,
+    acquisitionByYear: series,
+    yearly: years.map((year, index) => ({ year, cost: asNumber(series[index]) })),
+  };
+}
+
+function mapAssets(cbm, years) {
   const assets = [];
   // `category` is a free-text column (VARCHAR(600), no enum/CHECK constraint)
   // - saves whatever category label readInversion actually found (e.g. "EQUIPO
@@ -153,8 +166,7 @@ function mapAssets(cbm) {
       assets.push({
         name: item.name ?? category,
         category,
-        unitPrice: sumSeries(item.acquisitionByYear),
-        acquisitionByYear: item.acquisitionByYear ?? [],
+        ...mapAssetSeries(item.acquisitionByYear, years),
       });
     }
   }
@@ -162,8 +174,7 @@ function mapAssets(cbm) {
     assets.push({
       name: machine.description ?? machine.code ?? 'Machine',
       category: 'machine',
-      unitPrice: sumSeries(machine.acquisitionByYear),
-      acquisitionByYear: machine.acquisitionByYear ?? [],
+      ...mapAssetSeries(machine.acquisitionByYear, years),
     });
   }
   return assets;
@@ -234,7 +245,7 @@ export function mapCbmToGamePlan(cbm, fallbackName) {
       // expenses table already, was just never written here.
       notes: service.notes || '',
     })),
-    assets: mapAssets(cbm),
+    assets: mapAssets(cbm, years),
     employees: mapEmployees(cbm),
     bom: {
       productName: cbm?.bom?.productName || fallbackName || 'Product',

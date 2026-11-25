@@ -1,5 +1,5 @@
 import { Logger } from '../utils/logger.js'
-import { HORIZON_YEARS } from '../constants.js'
+import { projectYears } from '../constants.js'
 
 const logger = new Logger('ApplyDerivedBase')
 
@@ -33,16 +33,16 @@ const LINE_FIELDS = [
  * otherwise" convention the rest of the app already uses - so every
  * consumer of project.capacity.line can assume an array, always.
  */
-function normalizeCapacityLine(line) {
+function normalizeCapacityLine(line, years) {
   const normalized = {}
   LINE_FIELDS.forEach((field) => {
     const value = line?.[field]
     if (Array.isArray(value)) {
       normalized[field] = value
     } else if (typeof value === 'number' && Number.isFinite(value)) {
-      normalized[field] = HORIZON_YEARS.map(() => value)
+      normalized[field] = years.map(() => value)
     } else {
-      normalized[field] = HORIZON_YEARS.map(() => undefined)
+      normalized[field] = years.map(() => undefined)
     }
   })
   return normalized
@@ -100,11 +100,12 @@ export function applyDerivedBase(project) {
   // 0 only, for the one existing consumer (BreakEvenSummary's per-unit labor
   // cost) that expects a single year-zero number - annualCapacityByYear is
   // the new per-year series everything else should use going forward.
-  project.capacity.line = normalizeCapacityLine(project.capacity.line)
+  const years = projectYears(project)
+  project.capacity.line = normalizeCapacityLine(project.capacity.line, years)
   const line = project.capacity.line
 
   const { unitsPerHour, capacity: annualCapacity } = capacityForIndex(line, 0)
-  const annualCapacityByYear = HORIZON_YEARS.map((_, index) => capacityForIndex(line, index).capacity)
+  const annualCapacityByYear = years.map((_, index) => capacityForIndex(line, index).capacity)
 
   const machines = project.capacity.machines
   const operatorCount = machines.reduce((acc, machine) => acc + asNumber(machine.operators), 0)

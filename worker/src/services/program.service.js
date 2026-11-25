@@ -94,11 +94,11 @@ function logCbmToGamePlan(plan, { projectName, fileName }) {
       rowCount: plan.assets?.length ?? 0,
     },
     asset_cost_yearly: {
-      from: 'plan.assets[].acquisitionByYear (nonzero years only, year = 2025 + index)',
+      from: 'plan.assets[].yearly (nonzero years only, year = cbm.timeline.years[index])',
     },
     game_team_assets: {
       from: 'one link per asset',
-      columns: { quantity: 1, unit_price: 'sum of acquisitionByYear' },
+      columns: { quantity: 1, unit_price: 'first nonzero value of acquisitionByYear' },
     },
     employees: {
       from: 'plan.employees[]',

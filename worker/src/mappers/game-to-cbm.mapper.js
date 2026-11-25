@@ -91,11 +91,20 @@ function typeFromJobTitle(jobTitle) {
   return 'operacion';
 }
 
+/**
+ * `fallback` (assets.unit_price) only fills year zero for an asset with NO
+ * yearly rows at all. It must never fill a gap in an asset that does have
+ * yearly costs: projects uploaded before the fix stored unit_price as the
+ * SUM of every year (29.2M × 10 = 292M), and an Inversion sheet that starts
+ * a year after the old fixed 2025 had no 2025 row - so the sum showed up as
+ * the year-zero value (and its depreciation dragged Net Fixed Assets negative).
+ */
 function acquisitionSeries(years, costsByYear, fallback) {
   const firstYear = years[0];
+  const hasYearlyCosts = costsByYear.size > 0;
   return years.map((year) => {
     if (costsByYear.has(year)) return asNumber(costsByYear.get(year), 0);
-    if (year === firstYear) return asNumber(fallback, 0);
+    if (year === firstYear && !hasYearlyCosts) return asNumber(fallback, 0);
     return 0;
   });
 }

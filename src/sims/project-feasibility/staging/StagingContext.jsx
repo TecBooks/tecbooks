@@ -55,22 +55,22 @@ export function StagingProvider({ children }) {
         nextErrors.push({ fileName: file.name, messages: [gate] })
         continue
       }
-      const { project, validation } = await parseNovusProjectFile(file)
-      if (!validation.valid || !project) {
+      const { project, validation, yearZero } = await parseNovusProjectFile(file)
+      if (!project) {
         nextErrors.push({
           fileName: file.name,
           messages: validation.errors?.length ? validation.errors : ['Could not parse the file'],
         })
         continue
       }
-      accepted.push({
-        fileName: file.name,
-        file,
-        project,
-        validation,
-      })
+      // Staged even when invalid: most errors are year problems the user
+      // fixes by picking another year zero (re-parse, see setYearZero) -
+      // canConfirm still requires every staged item to be valid.
+      accepted.push({ fileName: file.name, file, project, validation, yearZero })
       logger.info('staged project CBM (client, before POST)', {
         fileName: file.name,
+        yearZero,
+        errors: validation.errors,
         warnings: validation.warnings,
         derivedBase: project.derivedBase,
         project,
@@ -80,6 +80,27 @@ export function StagingProvider({ children }) {
     setItems((prev) => [...prev, ...accepted])
     setFileErrors(nextErrors)
     setIsParsing(false)
+  }, [items])
+
+  // Re-reads one staged workbook against the horizon the user picked:
+  // { yearZero, projectionYears } - either one, the other keeps its value.
+  const setHorizon = useCallback(async (index, changes) => {
+    const item = items[index]
+    if (!item) return
+    const options = {
+      yearZero: changes.yearZero ?? item.yearZero?.selected,
+      projectionYears: changes.projectionYears ?? item.yearZero?.projectionYears,
+    }
+    setIsParsing(true)
+    try {
+      const { project, validation, yearZero } = await parseNovusProjectFile(item.file, options)
+      if (!project) return
+      setItems((prev) =>
+        prev.map((current, i) => (i === index ? { ...current, project, validation, yearZero } : current)),
+      )
+    } finally {
+      setIsParsing(false)
+    }
   }, [items])
 
   const remove = useCallback((index) => {
@@ -145,6 +166,7 @@ export function StagingProvider({ children }) {
     isSubmitting,
     canConfirm,
     addFiles,
+    setHorizon,
     remove,
     confirm,
   }

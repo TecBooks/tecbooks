@@ -1,5 +1,7 @@
 import * as XLSX from 'xlsx'
-import { REQUIRED_SHEETS } from '../constants.js'
+import { DEFAULT_YEAR_ZERO, REQUIRED_SHEETS, clampProjectionYears, horizonYears } from '../constants.js'
+import { createYearReport } from './yearReport.js'
+import { detectYearZero } from './yearZero.js'
 import { createProjectClass } from '../model/createProjectClass.js'
 import { applyDerivedBase } from '../model/applyDerivedBase.js'
 import { validateProjectClass } from '../model/validateProjectClass.js'
@@ -36,11 +38,22 @@ function readWorkbook(input) {
 
 /**
  * Parse one Novus project workbook.
+ *
+ * Year zero: `options.yearZero` (what the user picked at upload) or, when not
+ * given, the one the workbook's own sheets suggest (parse/yearZero.js).
+ * Projection: `options.projectionYears` (2-10, default 10). The horizon is
+ * year zero .. year zero + projectionYears, and every sheet is read against
+ * it (extra year columns past it are ignored).
+ *
+ * Returns { project, validation, yearZero: { selected, suggested, candidates, projectionYears } }.
+ * `validation` includes the year report: a skipped or missing year column is
+ * an error (blocks the upload), a blank cell is a warning.
+ *
  * @param {ArrayBuffer | Uint8Array | object} input
- * @param {{ fileName?: string }} [options]
+ * @param {{ fileName?: string, yearZero?: number, projectionYears?: number }} [options]
  */
-export function parseNovusProject(input, { fileName } = {}) {
-  logger.info('parsing workbook', { fileName })
+export function parseNovusProject(input, { fileName, yearZero, projectionYears } = {}) {
+  logger.info('parsing workbook', { fileName, yearZero, projectionYears })
   const workbook = readWorkbook(input)
   const missing = REQUIRED_SHEETS.filter((name) => !workbook.Sheets[name])
   if (missing.length) {
@@ -52,40 +65,64 @@ export function parseNovusProject(input, { fileName } = {}) {
         errors: missing.map((name) => `Missing sheet "${name}"`),
         warnings: [],
       },
+      yearZero: null,
     }
   }
 
-  const project = createProjectClass({ fileName })
-  readPremisas(toRows(workbook, 'Premisas'), project)
-  readCOs(toRows(workbook, 'COs'), project)
-  readCapacidad(toRows(workbook, 'Capacidad'), project)
-  readBOM(toRows(workbook, 'BOM'), project)
-  readInversion(toRows(workbook, 'Inversion'), project)
-  readEmpleados(toRows(workbook, 'Empleados_2'), project)
-  readServicios(toRows(workbook, 'Servicios'), project)
+  const rows = Object.fromEntries(REQUIRED_SHEETS.map((name) => [name, toRows(workbook, name)]))
+  const detected = detectYearZero(rows)
+  const selected = Number.isInteger(yearZero) ? yearZero : (detected.suggested ?? DEFAULT_YEAR_ZERO)
+  const projection = clampProjectionYears(projectionYears)
+  const years = horizonYears(selected, projection)
+  const report = createYearReport(years)
+
+  const project = createProjectClass({ fileName, years })
+  readPremisas(rows.Premisas, project, report)
+  readCOs(rows.COs, project, report)
+  readCapacidad(rows.Capacidad, project, report)
+  readBOM(rows.BOM, project)
+  readInversion(rows.Inversion, project, report)
+  readEmpleados(rows.Empleados_2, project)
+  readServicios(rows.Servicios, project)
 
   project.metadata.name = project.bom.productName || ''
   applyDerivedBase(project)
 
-  const validation = validateProjectClass(project)
+  const modelValidation = validateProjectClass(project)
+  const errors = [...report.errors, ...modelValidation.errors]
+  const validation = {
+    valid: errors.length === 0,
+    errors,
+    warnings: [...report.warnings, ...modelValidation.warnings],
+  }
   if (!validation.valid) {
     logger.warn('workbook parsed with validation errors', { fileName, errors: validation.errors })
   } else {
     logger.debug('workbook parsed OK', { fileName })
   }
 
-  return { project, validation }
+  return {
+    project,
+    validation,
+    yearZero: {
+      selected,
+      suggested: detected.suggested,
+      candidates: detected.candidates,
+      projectionYears: projection,
+    },
+  }
 }
 
-export async function parseNovusProjectFile(file) {
+export async function parseNovusProjectFile(file, { yearZero, projectionYears } = {}) {
   const gate = getFileGateError(file)
   if (gate) {
     logger.warn('rejected file before parsing', { fileName: file?.name, reason: gate })
     return {
       project: null,
       validation: { valid: false, errors: [gate], warnings: [] },
+      yearZero: null,
     }
   }
   const buffer = await file.arrayBuffer()
-  return parseNovusProject(buffer, { fileName: file.name })
+  return parseNovusProject(buffer, { fileName: file.name, yearZero, projectionYears })
 }

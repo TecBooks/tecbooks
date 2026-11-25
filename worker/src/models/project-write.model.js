@@ -229,8 +229,10 @@ export async function insertAssetsForTeam(database, teamId, assets) {
       .bind(asset.name, asset.category, asset.unitPrice)
       .first();
 
-    const yearly = (asset.acquisitionByYear ?? [])
-      .map((cost, index) => ({ year: 2025 + index, cost }))
+    // asset.yearly carries the real year of every cost (the project's own
+    // horizon - see cbm-to-game.mapper.js mapAssetSeries). Never derive the
+    // year from the array index + a fixed start year.
+    const yearly = (asset.yearly ?? [])
       .filter((item) => typeof item.cost === 'number' && Number.isFinite(item.cost) && item.cost !== 0);
     if (yearly.length) {
       await runBatch(

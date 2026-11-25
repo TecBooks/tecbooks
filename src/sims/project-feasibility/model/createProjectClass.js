@@ -1,7 +1,10 @@
 import { HORIZON_YEARS } from '../constants.js'
 import { emptyYearSeries } from '../parse/cells.js'
 
-export function createProjectClass({ fileName } = {}) {
+/** `years`: the project's horizon (year zero .. +N) - see horizonYears(). */
+export function createProjectClass({ fileName, years = HORIZON_YEARS } = {}) {
+  // Every per-year series is as long as this project's horizon.
+  const empty = () => emptyYearSeries(years.length)
   return {
     metadata: {
       name: '',
@@ -9,34 +12,34 @@ export function createProjectClass({ fileName } = {}) {
       fileName: fileName ?? '',
     },
     timeline: {
-      years: [...HORIZON_YEARS],
-      startYear: HORIZON_YEARS[0],
-      endYear: HORIZON_YEARS[HORIZON_YEARS.length - 1],
+      years: [...years],
+      startYear: years[0],
+      endYear: years[years.length - 1],
       financingPeriods: undefined,
     },
     premises: {
       startingMoney: undefined,
-      fxClose: emptyYearSeries(),
-      nationalLeadingRate: emptyYearSeries(),
-      cpp: emptyYearSeries(),
-      cetes: emptyYearSeries(),
-      libor: emptyYearSeries(),
-      nationalInflation: emptyYearSeries(),
-      isr: emptyYearSeries(),
-      impac: emptyYearSeries(),
-      ptu: emptyYearSeries(),
-      foreignInflation: emptyYearSeries(),
-      inventoryPct: emptyYearSeries(),
-      suppliersPct: emptyYearSeries(),
-      shortTermLiabilityPct: emptyYearSeries(),
-      directProductCostPct: emptyYearSeries(),
-      indirectProductCostPct: emptyYearSeries(),
-      salesExpensePct: emptyYearSeries(),
-      adminPct: emptyYearSeries(),
-      depreciationBuildings: emptyYearSeries(),
-      depreciationMachinery: emptyYearSeries(),
-      depreciationTransport: emptyYearSeries(),
-      depreciationCompute: emptyYearSeries(),
+      fxClose: empty(),
+      nationalLeadingRate: empty(),
+      cpp: empty(),
+      cetes: empty(),
+      libor: empty(),
+      nationalInflation: empty(),
+      isr: empty(),
+      impac: empty(),
+      ptu: empty(),
+      foreignInflation: empty(),
+      inventoryPct: empty(),
+      suppliersPct: empty(),
+      shortTermLiabilityPct: empty(),
+      directProductCostPct: empty(),
+      indirectProductCostPct: empty(),
+      salesExpensePct: empty(),
+      adminPct: empty(),
+      depreciationBuildings: empty(),
+      depreciationMachinery: empty(),
+      depreciationTransport: empty(),
+      depreciationCompute: empty(),
       // Generic capture of every "Porcentaje depreciacion X" row Premisas
       // actually has - keyed by whatever category label X is, not limited
       // to the 4 above.
@@ -62,14 +65,14 @@ export function createProjectClass({ fileName } = {}) {
       // Yield, etc. - see readCapacidad). Per-year series now, same
       // HORIZON_YEARS-indexed array shape as premises.* fields.
       line: {
-        qualityYield: emptyYearSeries(),
-        secondsPerUnit: emptyYearSeries(),
-        hoursShift: emptyYearSeries(),
-        shifts: emptyYearSeries(),
-        productionLines: emptyYearSeries(),
-        weekWorkingDays: emptyYearSeries(),
-        monthsWorkingWeeks: emptyYearSeries(),
-        yearWorkingMonths: emptyYearSeries(),
+        qualityYield: empty(),
+        secondsPerUnit: empty(),
+        hoursShift: empty(),
+        shifts: empty(),
+        productionLines: empty(),
+        weekWorkingDays: empty(),
+        monthsWorkingWeeks: empty(),
+        yearWorkingMonths: empty(),
       },
       machines: [],
     },
@@ -91,7 +94,7 @@ export function createProjectClass({ fileName } = {}) {
     derivedBase: {
       unitsPerHour: undefined,
       annualCapacity: undefined,
-      annualCapacityByYear: emptyYearSeries(),
+      annualCapacityByYear: empty(),
       operatorCount: 0,
       supervisorCount: 0,
       bomMaterialCost: undefined,
