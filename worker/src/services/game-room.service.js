@@ -44,18 +44,31 @@ export async function createGameRoom(c, roomData, projectIds) {
   ]);
 }
 
-export async function validateProjects(c, placeholders, projectIds) {
+export async function validateProjects(c, placeholders, projectIds, createdBy) {
   return await c.env.DB.prepare(
-    `SELECT COUNT(*) AS n FROM feasibility_programs WHERE id IN (${placeholders})`,
+    `SELECT COUNT(DISTINCT project.id) AS n
+     FROM feasibility_projects AS project
+     JOIN feasibility_programs AS program ON program.id = project.program_id
+     WHERE project.id IN (${placeholders}) AND program.created_by = ?`,
   )
-    .bind(...projectIds)
+    .bind(...projectIds, createdBy)
     .all();
 }
 
 export async function findActiveGameRoom(db, code) {
   return db
     .prepare(
-      "SELECT game_id, code, created_by FROM game_rooms WHERE code = ? AND closed_at IS NULL",
+      `SELECT room.game_id, room.code, room.created_by,
+              project.id AS project_id, project.program_id,
+              project.game_id AS project_game_id, project.name AS project_name,
+              program.name AS program_name
+       FROM game_rooms AS room
+       LEFT JOIN game_project AS selected ON selected.game_id = room.game_id
+       LEFT JOIN feasibility_projects AS project ON project.id = selected.project_id
+       LEFT JOIN feasibility_programs AS program ON program.id = project.program_id
+       WHERE room.code = ? AND room.closed_at IS NULL
+       ORDER BY project.id
+       LIMIT 1`,
     )
     .bind(code)
     .first();

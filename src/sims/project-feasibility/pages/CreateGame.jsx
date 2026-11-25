@@ -8,11 +8,9 @@ import {
   Select,
   MenuItem,
   Button,
-  Chip,
   FormControl,
   FormHelperText,
   InputLabel,
-  OutlinedInput,
   Divider,
   Stack,
 } from "@mui/material";
@@ -79,33 +77,22 @@ export default function CreateGame() {
             >
               <InputLabel id="tags-select-label">Select project</InputLabel>
               <Select
-                multiple
                 name="selectedTags"
                 value={form.selectedTags}
                 onChange={handleChange}
                 disabled={loadingProjects}
-                input={<OutlinedInput label="Select project" />}
-                renderValue={(selected) => (
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                    {selected.map((value) => (
-                      <Chip
-                        key={value}
-                        label={projects[value - 1].name}
-                        size="small"
-                        color="primary"
-                      />
-                    ))}
-                  </Box>
-                )}
+                label="Select project"
               >
                 {projects.map((p) => (
                   <MenuItem key={p.id} value={p.id}>
-                    {p.name}
+                    {p.programName ? `${p.name} (${p.programName})` : p.name}
                   </MenuItem>
                 ))}
               </Select>
-              {projectsError && (
-                <FormHelperText error>{projectsError}</FormHelperText>
+              {(errors.selectedTags || projectsError) && (
+                <FormHelperText error>
+                  {errors.selectedTags || projectsError}
+                </FormHelperText>
               )}
             </FormControl>
 

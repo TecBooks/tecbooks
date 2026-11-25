@@ -145,15 +145,24 @@ function MockStatement({ title, rows, years, blank = false }) {
   );
 }
 
-function ProjectDashboard() {
+function ProjectDashboard({ gameSelection }) {
   const { programId, projectId } = useParams();
   const { programs, status } = usePrograms();
   const [tab, setTab] = useState(0);
-  const { program, project } = findProgramProject(
-    programs,
-    programId,
-    projectId,
-  );
+  const dashboardProgramId = programId ?? gameSelection?.programId;
+  const dashboardProjectId = projectId ?? gameSelection?.projectId;
+  const routeProject = findProgramProject(programs, programId, projectId);
+  const program = gameSelection
+    ? { id: gameSelection.programId, name: gameSelection.programName }
+    : routeProject.program;
+  const project = gameSelection
+    ? {
+        id: gameSelection.projectId,
+        programId: gameSelection.programId,
+        name: gameSelection.projectName,
+        gameId: gameSelection.gameId,
+      }
+    : routeProject.project;
   const [currency, setCurrency] = useState("MXN");
 
   // Shared by Cost Table + Operating Expenses + Financial Result + Taxes +
@@ -183,9 +192,9 @@ function ProjectDashboard() {
     [project?.id],
   );
 
-  if (status === "loading") return null;
+  if (!gameSelection && status === "loading") return null;
 
-  if (status === "error") {
+  if (!gameSelection && status === "error") {
     return (
       <Box sx={{ p: 4 }}>
         <Alert severity="error">Couldn't load the programs.</Alert>
@@ -255,8 +264,8 @@ function ProjectDashboard() {
           <Provider store={editsStore}>
             <TabContent
               activeTab={activeTab}
-              programId={programId}
-              projectId={projectId}
+              programId={dashboardProgramId}
+              projectId={dashboardProjectId}
               project={project}
               currency={currency}
             />

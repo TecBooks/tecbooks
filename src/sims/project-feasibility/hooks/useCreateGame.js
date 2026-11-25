@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 const INITIAL_FORM = {
   name: "",
-  selectedTags: [],
+  selectedTags: "",
   numTeams: 2,
   timePerRound: 60,
 };
@@ -48,8 +48,8 @@ export function useCreateGame() {
       errors.name = "Game name is required";
     }
 
-    if (form.selectedTags.length === 0) {
-      errors.selectedTags = "Select at least one project";
+    if (!form.selectedTags) {
+      errors.selectedTags = "Select a project";
     }
 
     if (form.numTeams === "" || form.numTeams === null) {
@@ -71,9 +71,7 @@ export function useCreateGame() {
     const { name, value, type } = event.target;
 
     let newValue = value;
-    if (name === "selectedTags") {
-      newValue = typeof value === "string" ? value.split(",") : value;
-    } else if (type === "number") {
+    if (type === "number") {
       newValue = value === "" ? "" : Number(value);
     }
 
@@ -97,7 +95,10 @@ export function useCreateGame() {
 
     try {
       setSubmitting(true);
-      const { code, sessionToken } = await createGame(form);
+      const { code, sessionToken } = await createGame({
+        ...form,
+        selectedTags: [form.selectedTags],
+      });
       if (!sessionToken) {
         throw new Error("The game session could not be created.");
       }
