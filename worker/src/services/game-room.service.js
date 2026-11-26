@@ -58,7 +58,7 @@ export async function validateProjects(c, placeholders, projectIds, createdBy) {
 export async function findActiveGameRoom(db, code) {
   return db
     .prepare(
-      `SELECT room.game_id, room.code, room.created_by,
+      `SELECT room.game_id, room.code, room.created_by, room.n_teams,
               project.id AS project_id, project.program_id,
               project.game_id AS project_game_id, project.name AS project_name,
               program.name AS program_name

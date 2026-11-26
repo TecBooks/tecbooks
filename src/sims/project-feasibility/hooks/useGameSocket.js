@@ -8,6 +8,11 @@ export function useGameSocket(code, token) {
   const [me, setMe] = useState(null);
   const [projectSelection, setProjectSelection] = useState(null);
   const [online, setOnline] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [teamAssignments, setTeamAssignments] = useState({});
+  const [allowTeamChanges, setAllowTeamChanges] = useState(true);
+  const [socketError, setSocketError] = useState("");
   const [gameStatus, setGameStatus] = useState("lobby");
   const [round, setRound] = useState(null);
   const [timeLeft, setTimeLeft] = useState(null);
@@ -42,12 +47,40 @@ export function useGameSocket(code, token) {
         const msg = JSON.parse(e.data);
         switch (msg.type) {
           case "welcome":
-            setMe(msg.you);
+            setMe({
+              ...msg.you,
+              teamId:
+                msg.you?.role === "student"
+                  ? msg.teamAssignments?.[msg.you.userId] ?? msg.you.teamId
+                  : msg.you?.teamId,
+            });
             setProjectSelection(msg.projectSelection);
             setGameStatus(msg.status);
+            setTeams(msg.teams || []);
+            setTeamMembers(msg.teamMembers || []);
+            setTeamAssignments(msg.teamAssignments || {});
+            setAllowTeamChanges(msg.allowTeamChanges !== false);
             break;
           case "presence":
             setOnline(msg.online);
+            setTeams(msg.teams || []);
+            setTeamMembers(msg.teamMembers || []);
+            setTeamAssignments(msg.teamAssignments || {});
+            setAllowTeamChanges(msg.allowTeamChanges !== false);
+            setMe((current) =>
+              current?.role === "student"
+                ? {
+                    ...current,
+                    teamId:
+                      msg.teamAssignments?.[current.userId] ??
+                      current.teamId,
+                  }
+                : current,
+            );
+            setSocketError("");
+            break;
+          case "error":
+            setSocketError(msg.message || "The game room action failed.");
             break;
           case "game_started":
             setGameStatus("running");
@@ -92,6 +125,11 @@ export function useGameSocket(code, token) {
     me,
     projectSelection,
     online,
+    teams,
+    teamMembers,
+    teamAssignments,
+    allowTeamChanges,
+    socketError,
     gameStatus,
     round,
     timeLeft,

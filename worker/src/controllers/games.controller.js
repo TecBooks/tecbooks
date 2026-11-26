@@ -19,7 +19,15 @@ export async function createGame(c) {
   const { name, numTeams, timePerRound, selectedTags } = await c.req.json();
 
   // Validación básica
-  if (!name || !Array.isArray(selectedTags) || selectedTags.length !== 1) {
+  if (
+    !name ||
+    !Number.isInteger(numTeams) ||
+    numTeams < 2 ||
+    !Number.isInteger(timePerRound) ||
+    timePerRound < 10 ||
+    !Array.isArray(selectedTags) ||
+    selectedTags.length !== 1
+  ) {
     return c.json({ error: "Invalid payload" }, 400);
   }
 
@@ -107,18 +115,38 @@ export async function joinGameRoom(c) {
   }
 
   const body = await c.req.json();
+  const hasDisplayName = body?.displayName !== undefined;
+  const displayName =
+    typeof body?.displayName === "string" ? body.displayName.trim() : null;
   if (
     !body ||
     typeof body !== "object" ||
     Array.isArray(body) ||
-    (body.sessionToken != null && typeof body.sessionToken !== "string")
+    (body.sessionToken != null && typeof body.sessionToken !== "string") ||
+    (hasDisplayName &&
+      (typeof body.displayName !== "string" ||
+        displayName.length === 0 ||
+        displayName.length > 60))
   ) {
-    return c.json({ error: "Invalid session token" }, 400);
+    return c.json({ error: "Invalid session or display name" }, 400);
   }
 
   const previousToken = body.sessionToken;
   const previousIdentity = await resolveGameIdentity(c, previousToken, room);
   if (previousIdentity) {
+    if (
+      previousIdentity.role === "student" &&
+      displayName &&
+      previousIdentity.name !== displayName
+    ) {
+      const sessionToken = await createGameSessionToken(c.env.JWT_SECRET, {
+        code,
+        role: "student",
+        subject: previousIdentity.id,
+        name: displayName,
+      });
+      return c.json({ code, sessionToken });
+    }
     return c.json({ code, sessionToken: previousToken });
   }
 
@@ -126,7 +154,7 @@ export async function joinGameRoom(c) {
     code,
     role: "student",
     subject: crypto.randomUUID(),
-    name: "Player",
+    name: displayName ?? "Player",
   });
 
   return c.json({ code, sessionToken }, 201);
@@ -186,6 +214,7 @@ export async function connectCode(c) {
   headers.set("X-User-Id", String(identity.id));
   headers.set("X-Name", identity.name);
   headers.set("X-Game-Id", String(room.game_id));
+  headers.set("X-Num-Teams", String(room.n_teams));
   headers.set("X-Program-Id", String(room.program_id ?? ""));
   headers.set("X-Project-Id", String(room.project_id ?? ""));
   headers.set("X-Project-Game-Id", String(room.project_game_id ?? ""));

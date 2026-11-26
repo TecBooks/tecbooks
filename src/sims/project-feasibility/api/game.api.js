@@ -17,10 +17,10 @@ export async function getGameRoom(code) {
   return data;
 }
 
-export async function joinGameRoom(code, sessionToken) {
+export async function joinGameRoom(code, sessionToken, displayName) {
   const { data } = await workerApi.post(
     `/api/games/rooms/${encodeURIComponent(code)}/join`,
-    { sessionToken },
+    { sessionToken, displayName },
   );
   return data;
 }

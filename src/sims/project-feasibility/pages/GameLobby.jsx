@@ -15,6 +15,11 @@ export default function GameLobby() {
     me,
     projectSelection,
     online,
+    teams,
+    teamMembers,
+    teamAssignments,
+    allowTeamChanges,
+    socketError,
     gameStatus,
     round,
     timeLeft,
@@ -72,20 +77,40 @@ export default function GameLobby() {
     );
 
   const students = online.filter((u) => u.role === "student");
+  const handleAssignStudent = (studentId, teamId) =>
+    send({ type: "assign_student", payload: { studentId, teamId } });
+  const handleToggleTeamChanges = (enabled) =>
+    send({ type: "set_team_changes", payload: { enabled } });
+  const handleChooseTeam = (teamId) =>
+    send({ type: "choose_team", payload: { teamId } });
 
   return me.role === "teacher" ? (
     <>
-      {roomCodeMessage}
       <TeacherLobby
         code={code}
         students={students}
+        teams={teams}
+        allowTeamChanges={allowTeamChanges}
+        socketError={socketError}
+        onAssignStudent={handleAssignStudent}
+        onToggleTeamChanges={handleToggleTeamChanges}
         onStart={() => send({ type: "start_game" })}
       />
     </>
   ) : (
     <>
-      {roomCodeMessage}
-      <StudentLobby name={me.name} students={students} />
+      <StudentLobby
+        code={code}
+        name={me.name}
+        userId={me.userId}
+        students={students}
+        teams={teams}
+        teamMembers={teamMembers}
+        teamId={teamAssignments[me.userId] || me.teamId}
+        allowTeamChanges={allowTeamChanges}
+        socketError={socketError}
+        onChooseTeam={handleChooseTeam}
+      />
     </>
   );
 }

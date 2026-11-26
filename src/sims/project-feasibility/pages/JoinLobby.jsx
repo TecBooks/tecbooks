@@ -19,6 +19,7 @@ const ROOM_NOT_FOUND_ERROR =
 
 export default function JoinLobby() {
   const [link, setLink] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const navigate = useNavigate();
@@ -27,19 +28,29 @@ export default function JoinLobby() {
     event.preventDefault();
     setSubmitError("");
 
-    if (!link || link === "") {
+    const roomCode = link.trim();
+    const participantName = displayName.trim();
+    if (!roomCode) {
       setSubmitError(INVALID_LINK_ERROR);
+      return;
+    }
+    if (!participantName) {
+      setSubmitError("Please enter your name.");
       return;
     }
 
     try {
       setSubmitting(true);
-      const previousToken = sessionStorage.getItem(`session:${link}`);
-      const room = await joinGameRoom(link, previousToken);
+      const previousToken = sessionStorage.getItem(`session:${roomCode}`);
+      const room = await joinGameRoom(
+        roomCode,
+        previousToken,
+        participantName,
+      );
       if (!room.sessionToken) {
         throw new Error("Could not create a lobby session. Please try again.");
       }
-      sessionStorage.setItem(`session:${link}`, room.sessionToken);
+      sessionStorage.setItem(`session:${roomCode}`, room.sessionToken);
       navigate(
         `/sims/project-feasibility/game/${encodeURIComponent(room.code)}`,
       );
@@ -94,13 +105,26 @@ export default function JoinLobby() {
               onChange={(event) => setLink(event.target.value)}
             />
 
+            <TextField
+              fullWidth
+              required
+              label="Your name"
+              variant="outlined"
+              size="small"
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+              slotProps={{ htmlInput: { maxLength: 60 } }}
+            />
+
             {submitError && <Alert severity="error">{submitError}</Alert>}
 
             <Button
               type="submit"
               variant="contained"
               fullWidth
-              disabled={submitting}
+              disabled={
+                submitting || !link.trim() || !displayName.trim()
+              }
               sx={{
                 mt: 1,
                 bgcolor: "#1e90ff",
