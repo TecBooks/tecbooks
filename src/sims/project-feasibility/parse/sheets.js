@@ -288,6 +288,13 @@ export function readCapacidad(rows, project, report = createYearReport(project.t
 
   for (const row of rows.slice(1)) {
     const label = normalizeLabel(row?.[0])
+    // The workbook's own "Anual Capacity" row is not an input (the app
+    // recomputes it, see applyDerivedBase) - kept only so the coherence
+    // checks can flag when the Excel's number and the app's formula disagree.
+    if (lineYearMap && (label === 'anual capacity' || label === 'annual capacity')) {
+      project.capacity.excelAnnualCapacity = seriesFromRow(row, lineYearMap, years)
+      continue
+    }
     if (label && !SKIP_LINE_LABELS.has(label) && LINE_LABELS[label]) {
       if (lineYearMap) {
         report.checkRowCells(`Capacidad · ${String(row[0]).trim()}`, row, lineYearMap)

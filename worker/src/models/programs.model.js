@@ -46,6 +46,31 @@ export async function listFeasibilityProjectsByProgramId(database, programId) {
   return results;
 }
 
+/** The project only if it belongs to `programId` and that program to `createdBy`. */
+export async function findOwnedFeasibilityProject(database, { programId, projectId, createdBy }) {
+  return database
+    .prepare(
+      `SELECT project.id, project.program_id, project.name, project.game_id, project.r2_key
+       FROM feasibility_projects AS project
+       JOIN feasibility_programs AS program ON program.id = project.program_id
+       WHERE project.id = ? AND project.program_id = ? AND program.created_by = ?`
+    )
+    .bind(projectId, programId, createdBy)
+    .first();
+}
+
+export async function deleteFeasibilityProjectById(database, projectId) {
+  await database.prepare('DELETE FROM feasibility_projects WHERE id = ?').bind(projectId).run();
+}
+
+export async function countFeasibilityProjectsByProgramId(database, programId) {
+  const row = await database
+    .prepare('SELECT COUNT(*) AS n FROM feasibility_projects WHERE program_id = ?')
+    .bind(programId)
+    .first();
+  return Number(row?.n ?? 0);
+}
+
 export async function deleteFeasibilityProgram(database, programId) {
   await database.prepare('DELETE FROM feasibility_projects WHERE program_id = ?').bind(programId).run();
   await database.prepare('DELETE FROM feasibility_programs WHERE id = ?').bind(programId).run();

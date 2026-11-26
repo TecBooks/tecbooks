@@ -16,6 +16,14 @@ export async function createProgramRequest({ name, projects, files }) {
   })
 }
 
+/** Deletes one project (D1 game graph + R2 workbook). Returns { deletedProjectId, programId, programDeleted }. */
+export async function deleteProjectRequest(programId, projectId) {
+  return logger.time(`deleteProjectRequest(${programId}/${projectId})`, async () => {
+    const { data } = await workerApi.delete(`/api/programs/${programId}/projects/${projectId}`)
+    return data
+  })
+}
+
 export async function listProgramsRequest() {
   return logger.time('listProgramsRequest', async () => {
     const { data } = await workerApi.get('/api/programs')

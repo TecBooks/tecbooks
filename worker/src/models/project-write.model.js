@@ -518,5 +518,7 @@ export async function deleteGameGraph(database, gameId) {
   await database.prepare('DELETE FROM premises_percentage WHERE game_id = ?').bind(gameId).run();
   await database.prepare('DELETE FROM premises_deprecations WHERE game_id = ?').bind(gameId).run();
   await database.prepare('DELETE FROM premises WHERE game_id = ?').bind(gameId).run();
+  // Table edits (row_table, migration 0014) reference games(id).
+  await database.prepare('DELETE FROM row_table WHERE game_id = ?').bind(gameId).run();
   await database.prepare('DELETE FROM games WHERE id = ?').bind(gameId).run();
 }

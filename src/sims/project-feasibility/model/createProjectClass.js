@@ -75,6 +75,9 @@ export function createProjectClass({ fileName, years = HORIZON_YEARS } = {}) {
         yearWorkingMonths: empty(),
       },
       machines: [],
+      // Capacidad's own "Anual Capacity" row, as the workbook computed it -
+      // read-only, only for the coherence checks (validation/coherenceChecks.js).
+      excelAnnualCapacity: undefined,
     },
     bom: {
       productName: '',

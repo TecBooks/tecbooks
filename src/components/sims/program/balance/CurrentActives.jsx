@@ -4,10 +4,12 @@ import { currentActivesSlice } from "@/store/balance.store";
 import flipObject from "@/utils/flipObject.js";
 import useTableRowsSync from "@/hooks/sims/project/useTableRowsSync.js";
 
+// `editable: true` rows: see sims/project-feasibility/balance/currentActivesOverrides.js
+// (Stocks can be overridden by the user, e.g. set to 0, and is saved per project).
 export const COST_ROWS = [
   { key: "cashAndBank", label: "Cash and Bank Accounts" },
   { key: "deposits", label: "Inventory" },
-  { key: "stocks", label: "Stocks" },
+  { key: "stocks", label: "Stocks", editable: true },
   { key: "inventary", label: "Accounts Receivable" },
 ];
 

@@ -67,6 +67,23 @@ export class EditableTableSlice {
             values: row.values ?? {},
           }));
         },
+        // Loads saved overrides of the persisted fixed rows (useOverridesSync):
+        // payload { rowKeys, rows: [{ rowId: rowKey, values: { [year]: value } }] }.
+        // Overrides of those rowKeys are replaced wholesale; others untouched.
+        hydrateOverrides: (state, action) => {
+          const { rowKeys = [], rows = [] } = action.payload ?? {};
+          for (const key of Object.keys(state.overrides)) {
+            if (rowKeys.includes(key.slice(0, key.indexOf(":")))) {
+              delete state.overrides[key];
+            }
+          }
+          for (const row of rows) {
+            if (!rowKeys.includes(row.rowId)) continue;
+            for (const [columnKey, value] of Object.entries(row.values ?? {})) {
+              state.overrides[`${row.rowId}:${columnKey}`] = value;
+            }
+          }
+        },
       },
     });
 

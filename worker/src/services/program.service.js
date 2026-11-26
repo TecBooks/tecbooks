@@ -1,5 +1,8 @@
 import {
+  countFeasibilityProjectsByProgramId,
   deleteFeasibilityProgram,
+  deleteFeasibilityProjectById,
+  findOwnedFeasibilityProject,
   insertFeasibilityProgram,
   insertFeasibilityProject,
   listFeasibilityProgramsByCreatedBy,
@@ -274,4 +277,37 @@ export async function listPrograms(database, createdBy) {
     programs.push(toProgramResponse(programRow, projectRows));
   }
   return programs;
+}
+
+/**
+ * Deletes one project the user owns: its catalog row, its whole Novus game
+ * graph in D1 (deleteGameGraph) and its workbook in R2. A program left with
+ * no projects is deleted too - an empty program has nothing to open.
+ *
+ * Order matters for the D1 foreign keys: feasibility_projects.game_id →
+ * games(id), so the catalog row goes before the game graph. R2 goes last and
+ * is best-effort: a failed object delete must not resurrect the project.
+ */
+export async function deleteProject(env, { programId, projectId, createdBy }) {
+  const project = await findOwnedFeasibilityProject(env.DB, { programId, projectId, createdBy });
+  if (!project) {
+    const error = new Error('project_not_found');
+    error.status = 404;
+    throw error;
+  }
+
+  await deleteFeasibilityProjectById(env.DB, project.id);
+  if (project.game_id) await deleteGameGraph(env.DB, project.game_id);
+
+  const remaining = await countFeasibilityProjectsByProgramId(env.DB, project.program_id);
+  const programDeleted = remaining === 0;
+  if (programDeleted) await deleteFeasibilityProgram(env.DB, project.program_id);
+
+  try {
+    await deleteProjectWorkbook(env.R2, project.r2_key);
+  } catch (error) {
+    console.error('deleteProject: R2 delete failed', { key: project.r2_key, error });
+  }
+
+  return { deletedProjectId: project.id, programId: project.program_id, programDeleted };
 }

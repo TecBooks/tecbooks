@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx'
 import { DEFAULT_YEAR_ZERO, REQUIRED_SHEETS, clampProjectionYears, horizonYears } from '../constants.js'
 import { createYearReport } from './yearReport.js'
 import { detectYearZero } from './yearZero.js'
+import { checkProjectCoherence, formatCoherenceIssue } from '../validation/coherenceChecks.js'
 import { createProjectClass } from '../model/createProjectClass.js'
 import { applyDerivedBase } from '../model/applyDerivedBase.js'
 import { validateProjectClass } from '../model/validateProjectClass.js'
@@ -89,11 +90,17 @@ export function parseNovusProject(input, { fileName, yearZero, projectionYears }
   applyDerivedBase(project)
 
   const modelValidation = validateProjectClass(project)
-  const errors = [...report.errors, ...modelValidation.errors]
+  // Coherence (validation/coherenceChecks.js): impossible data → error,
+  // incoherent strategy / likely mistake → warning.
+  const coherence = checkProjectCoherence(project)
+  const coherenceOf = (severity) =>
+    coherence.filter((item) => item.severity === severity).map(formatCoherenceIssue)
+  const errors = [...report.errors, ...modelValidation.errors, ...coherenceOf('error')]
   const validation = {
     valid: errors.length === 0,
     errors,
-    warnings: [...report.warnings, ...modelValidation.warnings],
+    warnings: [...report.warnings, ...modelValidation.warnings, ...coherenceOf('warning')],
+    coherence,
   }
   if (!validation.valid) {
     logger.warn('workbook parsed with validation errors', { fileName, errors: validation.errors })
