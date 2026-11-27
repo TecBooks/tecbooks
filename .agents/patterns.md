@@ -49,6 +49,27 @@ Upload is multipart: `name`, `projects` (JSON, CBM **without** `derivedBase`), `
 
 **New work:** add a tab-scoped GET + TanStack key (table above in `technical-debt.md`). Query Novus tables by `gameId` (`premises`, `expenses`, `game_team_employees`, `game_team_assets`, `boms`, `capacity`, purchase orders). Never hardcode `gameId = 1`. `enabled: Number.isInteger(gameId) && gameId > 0`.
 
+## Years (horizon)
+
+- Year zero and projection length are picked by the user at upload (`NewProgram` → "Year zero" picker, pre-selected by `parse/yearZero.js` `detectYearZero`; "Projection" picker, 2-15 years (`MIN/MAX_PROJECTION_YEARS`), default 10). Horizon = year zero .. +N (`horizonYears(yearZero, projectionYears)`). Size series by `timeline.years.length`, never by `HORIZON_LENGTH` (legacy 11).
+- A project's years are `cbm.timeline.years` (`projectYears(cbm)` in `constants.js`). Every per-year series (`premises.*`, `capacity.line.*`, `acquisitionByYear`) is indexed from that year zero: `series[i]` ↔ `timeline.years[i]`. Map index→year with `yearMapFromSeries(series, years, timelineStart(cbm))`.
+- **Do not** use `HORIZON_YEARS` / `HORIZON_START_YEAR` (legacy 2025 default) to label or index project data, and never `2025 + index` in the worker (assets carry `yearly: [{year, cost}]` from `cbm-to-game.mapper.js`).
+- Sheet readers take a `report` (`parse/yearReport.js`): a year header that skips a year or lacks a horizon year → **error** (blocks upload); a blank cell under an existing year column → **warning**. Invalid files stay staged so the user can change year zero and re-parse (`StagingContext.setYearZero`).
+- A row is a year header only if it has ≥2 year-like cells strictly increasing (`detectYearHeader`).
+
+## Upload coherence checks
+
+- `validation/coherenceChecks.js` `checkProjectCoherence(project)` runs in `parseNovusProject` after `validateProjectClass`. Impossible data → `severity: 'error'` (blocks upload); incoherent strategy / likely mistake → `'warning'`. Issues are `{ id, severity, title, message }` and also land in `validation.coherence`.
+- New check = one function + one case in `coherenceChecks.test.js` (clone the parsed official template, break one thing, assert the id). The official template must stay at 0 issues.
+- Don't check fields no calculation reads (e.g. Premisas "Tipo de cambio") - noise.
+
+## Editable fixed cells (user override, saved per project)
+
+- `EditableTable` editing is globally off (`ROWS_EDITABLE = false`). To let the user edit ONE fixed row anyway, mark it `editable: true` in that table's `rows` (double-click to edit, dashed underline as hint).
+- Persist those overrides with `useOverridesSync(gameId, slice, tableKey, rowKeys)` (`src/hooks/sims/project/`): saved in `row_table` under its own `tableKey` (e.g. `currentActivesOverrides`), one row per rowKey, `values = { [year]: value }`. No worker change needed.
+- Call it where the table's totals are read for every tab (e.g. `useEffectiveBalanceTotals`), not only in the table component, so other tabs see the saved value without the table being opened.
+- Example: Current Actives → Stocks (`balance/currentActivesOverrides.js`).
+
 ## Client folders
 
 - Sim HTTP: `src/sims/project-feasibility/api/` (auth, programs). Other leftover sim HTTP still in `src/api/sims/<feature>/`.

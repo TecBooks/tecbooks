@@ -1,5 +1,7 @@
-import { HORIZON_YEARS, MONTHS, SKIP_SERVICES_SUBCATEGORY } from '../constants.js'
+import { MONTHS, SKIP_SERVICES_SUBCATEGORY } from '../constants.js'
+import { createYearReport } from './yearReport.js'
 import {
+  detectYearHeader,
   isBlank,
   normalizeLabel,
   seriesFromRow,
@@ -75,7 +77,13 @@ const STARTING_MONEY_LABELS = new Set([
   'starting money',
 ])
 
-export function readPremisas(rows, project) {
+/**
+ * Every reader takes `report` (parse/yearReport.js): `report.years` is the
+ * project's horizon (year zero .. +10) - series are read against those years,
+ * and year-header gaps / blank cells are reported there.
+ */
+export function readPremisas(rows, project, report = createYearReport(project.timeline.years)) {
+  const years = report.years
   let lastYearMap = {}
   // BUG FIX: some Premisas sheets give ONE rate per item, not per category
   // ("Porcentaje de depreciacion Animales" as a year-header row, then Vaca/
@@ -85,22 +93,28 @@ export function readPremisas(rows, project) {
   // item's own rate (computeFixedAssets.js's rateSeriesForItem looks up an
   // item by its own name first, exactly this key).
   let insideDepreciationItemBlock = false
-  for (const row of rows) {
+  const readSeries = (row) => {
+    report.checkRowCells(`Premisas · ${String(row[0]).trim()}`, row, lastYearMap)
+    return seriesFromRow(row, lastYearMap, years)
+  }
+  rows.forEach((row, rowIndex) => {
     const label = normalizeLabel(row?.[0])
-    if (!label) {
-      const maybeYears = yearColumnMap(row)
-      if (Object.keys(maybeYears).length) lastYearMap = maybeYears
-      insideDepreciationItemBlock = false
-      continue
+    const header = detectYearHeader(row)
+    if (header) {
+      lastYearMap = yearColumnMap(row, years)
+      report.checkHeader(
+        `Premisas · year header${label ? ` "${String(row[0]).trim()}"` : ''} (row ${rowIndex + 1})`,
+        header,
+      )
     }
-    const asYears = yearColumnMap(row)
-    if (Object.keys(asYears).length) {
-      lastYearMap = asYears
+    if (!label) {
+      insideDepreciationItemBlock = false
+      return
     }
     if (label === 'periodos' || label.startsWith('periodos')) {
       project.timeline.financingPeriods = toNumberOrUndefined(row[1])
       insideDepreciationItemBlock = false
-      continue
+      return
     }
     // Premisas!B33 "Demanda anual" - scalar growth rate (0.07 = 7%), not a
     // yearly series. Drives projectPurchaseOrders' compounding after year
@@ -109,13 +123,13 @@ export function readPremisas(rows, project) {
     if (label === 'demanda anual') {
       project.premises.demandGrowth = toNumberOrUndefined(row[1])
       insideDepreciationItemBlock = false
-      continue
+      return
     }
     const field = PREMISES_ROWS[label]
     if (field) {
-      project.premises[field] = seriesFromRow(row, lastYearMap)
+      project.premises[field] = readSeries(row)
       insideDepreciationItemBlock = false
-      continue
+      return
     }
     const depreciationMatch = label.match(DEPRECIATION_RATE_PATTERN)
     if (depreciationMatch) {
@@ -123,25 +137,25 @@ export function readPremisas(rows, project) {
       // Animales | 2025 | 2026 | ...") rather than carrying rate values
       // directly - lastYearMap was just set from this row's own year columns
       // above, so it's ready for the per-item rows that follow.
-      if (Object.keys(asYears).length > 0) {
+      if (header) {
         insideDepreciationItemBlock = true
-        continue
+        return
       }
-      project.premises.depreciationByCategory[depreciationMatch[1]] = seriesFromRow(row, lastYearMap)
+      project.premises.depreciationByCategory[depreciationMatch[1]] = readSeries(row)
       insideDepreciationItemBlock = false
-      continue
+      return
     }
     if (insideDepreciationItemBlock) {
-      project.premises.depreciationByCategory[label] = seriesFromRow(row, lastYearMap)
+      project.premises.depreciationByCategory[label] = readSeries(row)
     }
-  }
+  })
 
   if (project.premises.startingMoney === undefined) {
     project.premises.startingMoney = toNumberOrUndefined(rows[STARTING_MONEY_ROW_INDEX]?.[1])
   }
 }
 
-export function readCOs(rows, project) {
+export function readCOs(rows, project, report = createYearReport(project.timeline.years)) {
   const history = []
   const yearlyTotals = []
   for (let i = 1; i < rows.length; i += 1) {
@@ -171,9 +185,57 @@ export function readCOs(rows, project) {
     }
   }
   project.demand.history = history
-  project.demand.yearlyTotals = yearlyTotals
-  project.demand.yearZeroYear = yearlyTotals[0]?.year
-  project.demand.yearZeroTotal = yearlyTotals[0]?.total
+  project.demand.yearlyTotals = checkCosYearlyTotals(yearlyTotals, report)
+  project.demand.yearZeroYear = project.demand.yearlyTotals[0]?.year
+  project.demand.yearZeroTotal = project.demand.yearlyTotals[0]?.total
+}
+
+/**
+ * COs "Año Cero | Total" is a list of rows, not year columns, so it gets its
+ * own checks: it must start at year zero and must not skip a year. Years
+ * after the list ends are projected with "Demanda Anual" (warning only);
+ * years past the horizon are dropped (they used to leak an extra 11th year
+ * into the cash flow - an empty year that turned the TIR into NaN/1000%).
+ */
+function checkCosYearlyTotals(yearlyTotals, report) {
+  const years = report.years
+  const yearZero = years[0]
+  const lastYear = years[years.length - 1]
+  if (!yearlyTotals.length) {
+    report.error('COs: the "Año Cero | Total" list (columns H/I) is empty')
+    return []
+  }
+
+  if (yearlyTotals[0].year !== yearZero) {
+    report.error(
+      `COs: the "Año Cero | Total" list starts in ${yearlyTotals[0].year}, but year zero is ${yearZero}`,
+    )
+  }
+  const skipped = []
+  for (let i = 1; i < yearlyTotals.length; i += 1) {
+    for (let year = yearlyTotals[i - 1].year + 1; year < yearlyTotals[i].year; year += 1) {
+      skipped.push(year)
+    }
+    if (yearlyTotals[i].year <= yearlyTotals[i - 1].year) {
+      report.error(`COs: the "Año Cero | Total" list repeats or goes back to ${yearlyTotals[i].year}`)
+    }
+  }
+  if (skipped.length) {
+    report.error(`COs: the "Año Cero | Total" list skips ${skipped.join(', ')}`)
+  }
+
+  const inHorizon = yearlyTotals.filter(({ year }) => year >= yearZero && year <= lastYear)
+  const beyond = yearlyTotals.filter(({ year }) => year > lastYear).map(({ year }) => year)
+  if (beyond.length) {
+    report.warning(`COs: ${beyond.join(', ')} is past the horizon (${yearZero}-${lastYear}) and was ignored`)
+  }
+  const lastGiven = inHorizon[inHorizon.length - 1]?.year
+  if (lastGiven !== undefined && lastGiven < lastYear) {
+    report.warning(
+      `COs: no total after ${lastGiven} - ${lastGiven + 1}-${lastYear} are projected with "Demanda Anual"`,
+    )
+  }
+  return inHorizon
 }
 
 // Line params (Quality Yield etc.) are a single scalar per row (label in
@@ -206,35 +268,62 @@ function findMachineHeader(rows) {
       const field = MACHINE_COLUMN_LABELS[normalizeLabel(cell)]
       if (field) columns[field] = index
     })
-    return { rowIndex, columns, yearMap: yearColumnMap(row) }
+    return { rowIndex, columns, header: detectYearHeader(row) }
   }
   return null
 }
 
-export function readCapacidad(rows, project) {
+export function readCapacidad(rows, project, report = createYearReport(project.timeline.years)) {
+  const years = report.years
+  // Line params: row 1 is the year header ("Capacidad de la línea | 2026 | ...").
+  // Read by year against it; only a sheet without that header falls back to
+  // the old "column B = year zero" positional read.
+  const lineHeader = detectYearHeader(rows[0])
+  const lineYearMap = lineHeader ? yearColumnMap(rows[0], years) : null
+  if (lineHeader) {
+    report.checkHeader('Capacidad · line parameters', lineHeader)
+  } else {
+    report.warning('Capacidad: no year header in row 1 - line parameters read by position from column B')
+  }
+
   for (const row of rows.slice(1)) {
     const label = normalizeLabel(row?.[0])
+    // The workbook's own "Anual Capacity" row is not an input (the app
+    // recomputes it, see applyDerivedBase) - kept only so the coherence
+    // checks can flag when the Excel's number and the app's formula disagree.
+    if (lineYearMap && (label === 'anual capacity' || label === 'annual capacity')) {
+      project.capacity.excelAnnualCapacity = seriesFromRow(row, lineYearMap, years)
+      continue
+    }
     if (label && !SKIP_LINE_LABELS.has(label) && LINE_LABELS[label]) {
-      project.capacity.line[LINE_LABELS[label]] = HORIZON_YEARS.map(
-        (_, index) => toNumberOrUndefined(row?.[LINE_YEAR_START_COL + index])
-      )
+      if (lineYearMap) {
+        report.checkRowCells(`Capacidad · ${String(row[0]).trim()}`, row, lineYearMap)
+        project.capacity.line[LINE_LABELS[label]] = seriesFromRow(row, lineYearMap, years)
+      } else {
+        project.capacity.line[LINE_LABELS[label]] = years.map(
+          (_, index) => toNumberOrUndefined(row?.[LINE_YEAR_START_COL + index])
+        )
+      }
     }
   }
 
   const machineHeader = findMachineHeader(rows)
   if (!machineHeader) return
-  const { rowIndex, columns, yearMap } = machineHeader
+  const { rowIndex, columns, header } = machineHeader
+  const yearMap = yearColumnMap(rows[rowIndex], years)
+  report.checkHeader('Capacidad · machines', header)
 
   for (const row of rows.slice(rowIndex + 1)) {
     const code = toStringOrUndefined(row?.[columns.code])
     if (!code || normalizeLabel(code).startsWith('agregar')) continue
+    report.checkRowCells(`Capacidad · machine ${code}`, row, yearMap)
     project.capacity.machines.push({
       code,
       description: toStringOrUndefined(row[columns.description]),
       processSeconds: toNumberOrUndefined(row[columns.processSeconds]),
       operators: toNumberOrUndefined(row[columns.operators]),
       cycleTime: toNumberOrUndefined(row[columns.cycleTime]),
-      acquisitionByYear: seriesFromRow(row, yearMap),
+      acquisitionByYear: seriesFromRow(row, yearMap, years),
     })
   }
 }
@@ -276,16 +365,18 @@ export function readBOM(rows, project) {
  * before (aliased in alongside, for the existing Cost Table/Income Statement/
  * Cash Flow pipeline that's hardcoded to those 3 names + machinery).
  */
-export function readInversion(rows, project) {
+export function readInversion(rows, project, report = createYearReport(project.timeline.years)) {
+  const years = report.years
   let currentKey = null
   let currentCategory = null
   let yearMap = {}
 
   for (const row of rows) {
-    const rowYearMap = yearColumnMap(row)
-    if (Object.keys(rowYearMap).length > 0) {
+    const header = detectYearHeader(row)
+    if (header) {
       currentCategory = toStringOrUndefined(row?.[0])
-      yearMap = rowYearMap
+      yearMap = yearColumnMap(row, years)
+      report.checkHeader(`Inversion · ${currentCategory ?? 'year header'}`, header)
       if (currentCategory) project.assets.byCategory[currentCategory] ??= []
       const label = normalizeLabel(row?.[0])
       const block = ASSET_BLOCKS.find((item) => label.startsWith(item.match))
@@ -314,7 +405,8 @@ export function readInversion(rows, project) {
     // (e.g. 2035 dropping straight to $0 while every other year stayed
     // correct). Forward-fill from the last real value found instead of
     // trusting every column's header cell individually.
-    const rawSeries = seriesFromRow(row, yearMap)
+    report.checkRowCells(`Inversion · ${currentCategory} · ${name}`, row, yearMap)
+    const rawSeries = seriesFromRow(row, yearMap, years)
     let lastKnownValue
     const acquisitionByYear = rawSeries.map((value) => {
       if (value !== undefined) lastKnownValue = value

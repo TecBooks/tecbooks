@@ -1,4 +1,4 @@
-import { HORIZON_LENGTH, HORIZON_YEARS, MONTHS } from '../constants.js'
+import { HORIZON_YEARS, MONTHS, projectYears } from '../constants.js'
 
 function isFiniteNumber(value) {
   return typeof value === 'number' && Number.isFinite(value)
@@ -82,14 +82,14 @@ function checkInvestmentCategoriesHaveDepreciation(errors, project) {
   })
 }
 
-function checkYearSeries(errors, warnings, label, series, { rates = false } = {}) {
-  if (!Array.isArray(series) || series.length !== HORIZON_LENGTH) {
-    errors.push(`${label} must have ${HORIZON_LENGTH} years (2025-2035)`)
+function checkYearSeries(errors, warnings, label, series, { rates = false, years = HORIZON_YEARS } = {}) {
+  if (!Array.isArray(series) || series.length !== years.length) {
+    errors.push(`${label} must have ${years.length} years (${years[0]}-${years[years.length - 1]})`)
     return
   }
   series.forEach((value, index) => {
     if (value === undefined) return
-    const year = HORIZON_YEARS[index] ?? `year ${index + 1}`
+    const year = years[index] ?? `year ${index + 1}`
     if (!isFiniteNumber(value)) {
       errors.push(`${label} (${year}) is not a number`)
       return
@@ -153,9 +153,10 @@ export function validateProjectClass(project) {
     'depreciationTransport',
     'depreciationCompute',
   ]
-  checkYearSeries(errors, warnings, 'Exchange rate', premises.fxClose)
+  const years = projectYears(project)
+  checkYearSeries(errors, warnings, 'Exchange rate', premises.fxClose, { years })
   rateKeys.forEach((key) => {
-    checkYearSeries(errors, warnings, key, premises[key], { rates: true })
+    checkYearSeries(errors, warnings, key, premises[key], { rates: true, years })
   })
   pushIfNegative(errors, 'Starting money', premises.startingMoney)
 
@@ -185,7 +186,7 @@ export function validateProjectClass(project) {
     if (!machine.code) errors.push(`Machine ${i + 1} missing code`)
     pushIfNegative(errors, `Operators ${machine.code ?? i}`, machine.operators)
     pushIfNegative(errors, `Cost ${machine.code ?? i}`, machine.acquisitionByYear?.[0])
-    checkYearSeries(errors, warnings, `Acquisition ${machine.code ?? i}`, machine.acquisitionByYear)
+    checkYearSeries(errors, warnings, `Acquisition ${machine.code ?? i}`, machine.acquisitionByYear, { years })
   })
 
   pushIfNegative(errors, 'Sale price', project.bom?.salePrice)
@@ -198,7 +199,7 @@ export function validateProjectClass(project) {
   for (const [group, list] of Object.entries(project.assets ?? {})) {
     if (!Array.isArray(list)) continue // byCategory is a {category: [...]} dict, not an array
     list.forEach((asset) => {
-      checkYearSeries(errors, warnings, `${group} ${asset.name}`, asset.acquisitionByYear)
+      checkYearSeries(errors, warnings, `${group} ${asset.name}`, asset.acquisitionByYear, { years })
     })
   }
   checkInvestmentCategoriesHaveDepreciation(errors, project)

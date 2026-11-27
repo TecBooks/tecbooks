@@ -21,6 +21,16 @@ Math may live on the worker or in a hook that only sees that slice. Do not add n
 
 **When this debt is gone:** `GET /api/feasibility/:gameId`, `useFeasibilityModel`, and `project.cbm` on the dashboard go away.
 
+## Projects saved before dynamic years
+
+Projects uploaded before the year-zero picker were parsed with year zero fixed at 2025, even when the workbook started in another year (sheets shifted by a year, last year dropped). Their `game_team_assets.unit_price` is the **sum** of every year (value × 10); `game-to-cbm.mapper.js` `acquisitionSeries` now ignores it whenever the asset has yearly rows, but the column itself is still wrong for old rows. Fix by re-uploading the workbook; do not build features that read `unit_price` as a price.
+
+## R2 workbooks of old deletions
+
+`DELETE /api/programs/:programId/projects/:projectId` (`program.service.js` `deleteProject`) now removes the project's workbook from R2 along with its D1 game graph. Workbooks of anything deleted before that endpoint existed are still orphaned in R2 (`tecbooks-testing`, shared by production and develop) - no cleanup job yet.
+
+When `develop-gamming` merges: `game_project.project_id` references `feasibility_projects(id)` (migration 0017 there). `deleteProject` must then delete (or block on) `game_project` rows for that project before deleting it, or the D1 foreign key will fail.
+
 ## Related leftovers
 
 - `GET /api/expenses?gameId=` still exists (old seed-shaped payload). Outflows UI does **not** use it; it uses the fat CBM. Do not hardcode `gameId = 1`.

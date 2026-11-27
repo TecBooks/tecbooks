@@ -1,4 +1,8 @@
-import { createProgramUseCase, listProgramsUseCase } from '../usecases/programs.usecase.js';
+import {
+  createProgramUseCase,
+  deleteProjectUseCase,
+  listProgramsUseCase,
+} from '../usecases/programs.usecase.js';
 import { createProgramRequestSchema } from '../requests/program.request.js';
 
 function asFileList(value) {
@@ -36,6 +40,26 @@ export async function createProgramController(context) {
   });
 
   return context.json(program, 201);
+}
+
+function asPositiveInt(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0 ? number : null;
+}
+
+export async function deleteProjectController(context) {
+  const programId = asPositiveInt(context.req.param('programId'));
+  const projectId = asPositiveInt(context.req.param('projectId'));
+  if (!programId || !projectId) {
+    return context.json({ error: 'invalid_params' }, 400);
+  }
+
+  const result = await deleteProjectUseCase(context.env, {
+    programId,
+    projectId,
+    createdBy: context.get('userId'),
+  });
+  return context.json(result, 200);
 }
 
 export async function listProgramsController(context) {

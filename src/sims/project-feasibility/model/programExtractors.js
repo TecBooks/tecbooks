@@ -13,6 +13,7 @@ export function toSidebarPrograms(programs = []) {
     name: program.name,
     projects: (program.projects ?? []).map((project) => ({
       id: project.id,
+      gameId: project.gameId,
       name: projectDisplayName(project) || `Project ${project.id}`,
     })),
   }))

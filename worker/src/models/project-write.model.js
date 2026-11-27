@@ -229,8 +229,10 @@ export async function insertAssetsForTeam(database, teamId, assets) {
       .bind(asset.name, asset.category, asset.unitPrice)
       .first();
 
-    const yearly = (asset.acquisitionByYear ?? [])
-      .map((cost, index) => ({ year: 2025 + index, cost }))
+    // asset.yearly carries the real year of every cost (the project's own
+    // horizon - see cbm-to-game.mapper.js mapAssetSeries). Never derive the
+    // year from the array index + a fixed start year.
+    const yearly = (asset.yearly ?? [])
       .filter((item) => typeof item.cost === 'number' && Number.isFinite(item.cost) && item.cost !== 0);
     if (yearly.length) {
       await runBatch(
@@ -516,5 +518,7 @@ export async function deleteGameGraph(database, gameId) {
   await database.prepare('DELETE FROM premises_percentage WHERE game_id = ?').bind(gameId).run();
   await database.prepare('DELETE FROM premises_deprecations WHERE game_id = ?').bind(gameId).run();
   await database.prepare('DELETE FROM premises WHERE game_id = ?').bind(gameId).run();
+  // Table edits (row_table, migration 0014) reference games(id).
+  await database.prepare('DELETE FROM row_table WHERE game_id = ?').bind(gameId).run();
   await database.prepare('DELETE FROM games WHERE id = ?').bind(gameId).run();
 }

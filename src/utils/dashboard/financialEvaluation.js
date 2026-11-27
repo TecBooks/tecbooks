@@ -30,6 +30,17 @@ export function computeIRR(
   cashFlows,
   { low = -0.99, high = 10, tolerance = 1e-6, maxIterations = 200 } = {},
 ) {
+  // A missing/NaN flow makes every NPV NaN; every comparison with NaN is
+  // false, so the bisection used to walk straight to `high` and report a
+  // 1000% TIR. No valid series → no TIR.
+  if (
+    !Array.isArray(cashFlows) ||
+    cashFlows.length === 0 ||
+    !cashFlows.every((flow) => typeof flow === "number" && Number.isFinite(flow))
+  ) {
+    return null;
+  }
+
   let lowerBound = low;
   let upperBound = high;
   let npvAtLower = computeNPV(cashFlows, lowerBound);

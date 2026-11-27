@@ -10,6 +10,11 @@ import {
   longTermPassiveSlice,
 } from "@/store/balance.store";
 import { COST_ROWS } from "@/components/sims/program/balance/CurrentActives.jsx";
+import {
+  CURRENT_ACTIVES_EDITABLE_ROW_KEYS,
+  CURRENT_ACTIVES_OVERRIDES_KEY,
+} from "./currentActivesOverrides.js";
+import useOverridesSync from "@/hooks/sims/project/useOverridesSync.js";
 import { DEFERED_ACTIVES_ROWS } from "@/components/sims/program/balance/DeferedActives.jsx";
 import {
   CURRENT_PASSIVES,
@@ -96,6 +101,15 @@ function useEffectiveBalanceTotals(cbm, gameId) {
   useTableRowsSync(gameId, currentPassiveSlice, "currentPassives", {
     fallbackRows: defaultCurrentPassiveRows,
   });
+  // Saved Stocks override (user can set it to 0) - synced here, not in
+  // CurrentActives.jsx, so Ratios/Equity get it even when the Balance tab
+  // was never opened (same reason the Current Passives seed lives here).
+  useOverridesSync(
+    gameId,
+    currentActivesSlice,
+    CURRENT_ACTIVES_OVERRIDES_KEY,
+    CURRENT_ACTIVES_EDITABLE_ROW_KEYS,
+  );
 
   const currentActivesOverrides = useSelector(
     currentActivesSlice.selectOverrides,

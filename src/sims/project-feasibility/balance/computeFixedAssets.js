@@ -1,6 +1,6 @@
 import { computeAssetDepreciation, computeCumulativeInvestment } from '@/utils/dashboard/costCalculations'
 import { assetValueInYear } from '@/utils/dashboard/assetSchedule.js'
-import { mapAssetsToYears, yearMapFromSeries } from '@/sims/project-feasibility/costTable/cbmToCostTableInputs'
+import { mapAssetsToYears, timelineStart, yearMapFromSeries } from '@/sims/project-feasibility/costTable/cbmToCostTableInputs'
 import { Logger } from '../utils/logger.js'
 
 const logger = new Logger('ComputeFixedAssets')
@@ -123,13 +123,14 @@ export function computeFixedAssetsByCategory(cbm, years) {
   if (machinery) categories[machinery.label] = machinery.assets
 
   const result = {}
+  const start = timelineStart(cbm)
   for (const [category, rawAssets] of Object.entries(categories)) {
-    const assets = mapAssetsToYears(rawAssets, years)
+    const assets = mapAssetsToYears(rawAssets, years, start)
 
     const items = assets.map((asset) => {
       const rateSeries = rateSeriesForItem(cbm, category, asset.name)
       const rateByYear = rateSeries
-        ? yearMapFromSeries(rateSeries, years)
+        ? yearMapFromSeries(rateSeries, years, start)
         : Object.fromEntries(years.map((year) => [year, 0]))
 
       const cumulativeByYear = computeItemCumulativeByYear(asset, years)

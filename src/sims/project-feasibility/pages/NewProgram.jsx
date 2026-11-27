@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Alert, Box, Button, Card, Chip, Collapse, IconButton, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Card, Chip, Collapse, IconButton, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import DeleteOutline from '@mui/icons-material/DeleteOutline'
 import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined'
 import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
@@ -9,17 +9,95 @@ import { useStaging } from '../staging/StagingContext.jsx'
 import ProjectDropzone from './ProjectDropzone.jsx'
 import BackButton from '@/components/global/BackButton'
 import TemplateGuideModal from './TemplateGuideModal.jsx'
+import { MAX_PROJECTION_YEARS, MIN_PROJECTION_YEARS } from '../constants.js'
 
 const TEMPLATE_FILE_URL = '/official-input-template.xlsx'
 
-function StagedProjectCard({ item, onRemove }) {
+const YEAR_ZERO_RANGE = 5
+
+// Years offered in the picker: every year a sheet starts on, plus a few
+// around the suggestion - enough to fix a workbook that is off by a year or two.
+function yearZeroOptions(yearZero) {
+  const years = new Set((yearZero?.candidates ?? []).map((c) => c.firstYear))
+  const center = yearZero?.selected ?? yearZero?.suggested
+  if (Number.isInteger(center)) {
+    for (let year = center - YEAR_ZERO_RANGE; year <= center + YEAR_ZERO_RANGE; year += 1) years.add(year)
+  }
+  return [...years].sort((a, b) => a - b)
+}
+
+const PROJECTION_OPTIONS = Array.from(
+  { length: MAX_PROJECTION_YEARS - MIN_PROJECTION_YEARS + 1 },
+  (_, i) => MIN_PROJECTION_YEARS + i,
+)
+
+function HorizonPicker({ yearZero, years, disabled, onChange }) {
+  const candidates = yearZero?.candidates ?? []
+  const sheetsDisagree = new Set(candidates.map((c) => c.firstYear)).size > 1
+  return (
+    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} sx={{ mt: 1.5 }}>
+      <TextField
+        select
+        size="small"
+        label="Year zero"
+        value={yearZero?.selected ?? ''}
+        disabled={disabled}
+        onChange={(event) => onChange({ yearZero: Number(event.target.value) })}
+        sx={{ minWidth: 140 }}
+      >
+        {yearZeroOptions(yearZero).map((year) => (
+          <MenuItem key={year} value={year}>
+            {year}
+            {year === yearZero?.suggested ? ' (suggested)' : ''}
+          </MenuItem>
+        ))}
+      </TextField>
+      <TextField
+        select
+        size="small"
+        label="Projection"
+        value={yearZero?.projectionYears ?? ''}
+        disabled={disabled}
+        onChange={(event) => onChange({ projectionYears: Number(event.target.value) })}
+        sx={{ minWidth: 140 }}
+      >
+        {PROJECTION_OPTIONS.map((n) => (
+          <MenuItem key={n} value={n}>
+            {n} years
+          </MenuItem>
+        ))}
+      </TextField>
+      <Box>
+        <Typography variant="body2" sx={{ fontSize: 15 }}>
+          Horizon: {years[0]}-{years[years.length - 1]}
+        </Typography>
+        {candidates.length > 0 && (
+          <Typography
+            variant="caption"
+            sx={{ fontSize: 13, display: 'block', color: sheetsDisagree ? 'warning.dark' : 'text.secondary' }}
+          >
+            {sheetsDisagree ? 'Sheets start in different years: ' : 'Sheets start in: '}
+            {candidates.map((c) => `${c.sheet} ${c.firstYear}`).join(' · ')}
+          </Typography>
+        )}
+      </Box>
+    </Stack>
+  )
+}
+
+function StagedProjectCard({ item, onRemove, onHorizonChange, disabled }) {
   const [warningsOpen, setWarningsOpen] = useState(false)
   const warnings = item.validation.warnings ?? []
+  const errors = item.validation.errors ?? []
 
   return (
     <Card
       variant="outlined"
-      sx={{ p: 2, borderRadius: 2, borderColor: 'rgba(7, 58, 90, 0.15)' }}
+      sx={{
+        p: 2,
+        borderRadius: 2,
+        borderColor: errors.length ? 'error.light' : 'rgba(7, 58, 90, 0.15)',
+      }}
     >
       <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
         <Box sx={{ minWidth: 0 }}>
@@ -34,6 +112,25 @@ function StagedProjectCard({ item, onRemove }) {
           <DeleteOutline fontSize="small" />
         </IconButton>
       </Stack>
+
+      <HorizonPicker
+        yearZero={item.yearZero}
+        years={item.project.timeline.years}
+        disabled={disabled}
+        onChange={onHorizonChange}
+      />
+
+      {errors.length > 0 && (
+        <Alert severity="error" sx={{ mt: 1.5, fontSize: 15 }}>
+          This file can't be uploaded with year zero {item.yearZero?.selected} and a{' '}
+          {item.yearZero?.projectionYears}-year projection:
+          <ul style={{ margin: 0, paddingLeft: 20 }}>
+            {errors.map((message) => (
+              <li key={message}>{message}</li>
+            ))}
+          </ul>
+        </Alert>
+      )}
 
       {warnings.length > 0 && (
         <Box sx={{ mt: 1 }}>
@@ -73,7 +170,9 @@ function NewProgram() {
     fileErrors,
     confirmError,
     isSubmitting,
+    isParsing,
     canConfirm,
+    setHorizon,
     remove,
     confirm,
   } = useStaging()
@@ -147,13 +246,15 @@ function NewProgram() {
       </Typography>
 
       {items.length === 0 ? (
-        <Typography sx={{ fontSize: 20, opacity: 0.8 }}>No validated projects yet.</Typography>
+        <Typography sx={{ fontSize: 20, opacity: 0.8 }}>No projects staged yet.</Typography>
       ) : (
         <Stack spacing={1.5}>
           {items.map((item, index) => (
             <StagedProjectCard
               key={`${item.fileName}-${index}`}
               item={item}
+              disabled={isParsing || isSubmitting}
+              onHorizonChange={(changes) => setHorizon(index, changes)}
               onRemove={() => remove(index)}
             />
           ))}

@@ -28,7 +28,7 @@ import FinancialRatios from "@/components/sims/program/FinancialRatios";
 import useFeasibilityModel from "@/hooks/sims/project/useFeasibilityModel";
 import { PageTour } from "@/tours/PageTour";
 import TourButton from "@/components/global/TourButton";
-import { HORIZON_YEARS } from "../constants";
+import { projectYears } from "../constants";
 import {
   findProgramProject,
   projectDisplayName,
@@ -320,7 +320,7 @@ function TabContent({ activeTab, programId, projectId, project, currency }) {
       key={`${programId}-${projectId}-${activeTab.id}`}
       title={activeTab.label}
       rows={BALANCE_ROWS}
-      years={HORIZON_YEARS.slice(0, 4)}
+      years={projectYears(projectWithCbm?.cbm).slice(0, 4)}
     />
   );
 }

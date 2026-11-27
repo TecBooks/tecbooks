@@ -35,8 +35,13 @@ function valueColorClass(value) {
   return value < 0 ? 'text-rose-600' : 'text-emerald-700'
 }
 
-/** Double-click a value to edit it inline; Enter/blur commits, Escape cancels. */
-function EditableValueCell({ value, onCommit, formatValue, currency }) {
+/**
+ * Double-click a value to edit it inline; Enter/blur commits, Escape cancels.
+ * `editable` defaults to the global ROWS_EDITABLE switch; a fixed row marked
+ * `editable: true` (see EditableTable's `rows`) is editable even while the
+ * switch is off.
+ */
+function EditableValueCell({ value, onCommit, formatValue, currency, editable = ROWS_EDITABLE }) {
   const [editing, setEditing] = React.useState(false)
   const [draft, setDraft] = React.useState('')
 
@@ -73,10 +78,17 @@ function EditableValueCell({ value, onCommit, formatValue, currency }) {
   return (
     <TableCell
       align="right"
-      onDoubleClick={ROWS_EDITABLE ? startEditing : undefined}
-      className={`${CELL_PAD} whitespace-nowrap ${ROWS_EDITABLE ? 'cursor-text' : ''}`}
+      onDoubleClick={editable ? startEditing : undefined}
+      title={editable ? 'Double-click to edit' : undefined}
+      className={`${CELL_PAD} whitespace-nowrap ${editable ? 'cursor-text' : ''}`}
     >
-      <span className={`tabular-nums ${valueColorClass(value)}`}>{formatValue(value, currency)}</span>
+      <span
+        className={`tabular-nums ${valueColorClass(value)} ${
+          editable ? 'border-b border-dashed border-slate-300' : ''
+        }`}
+      >
+        {formatValue(value, currency)}
+      </span>
     </TableCell>
   )
 }
@@ -137,7 +149,9 @@ function EditableLabelCell({ label, onCommit }) {
  * @param {string} title
  * @param {import('@/store/EditableTableSlice').EditableTableSlice} slice
  * @param {{key: string|number, label: string|number}[]} columns
- * @param {{key: string, label: string}[]} rows - fixed rows, not deletable
+ * @param {{key: string, label: string, editable?: boolean}[]} rows - fixed rows, not deletable.
+ *   `editable: true` lets the user override that row's cells even while
+ *   ROWS_EDITABLE is off - persist those overrides with useOverridesSync.
  * @param {(rowKey: string, columnKey: string|number) => number} getValue
  * @param {string} [totalLabel]
  * @param {(value: number) => string} [formatValue]
@@ -218,6 +232,7 @@ function EditableTable({
                     onCommit={(value) => dispatch(slice.actions.setOverride({ rowKey: row.key, columnKey, value }))}
                     formatValue={formatValue}
                     currency={currency}
+                    editable={ROWS_EDITABLE || Boolean(row.editable)}
                   />
                 ))}
               </TableRow>

@@ -53,6 +53,7 @@ export function projectionBase(annualizedYearZero, history) {
  * (and history-averaged) level: base × (1 + demandGrowth)^k.
  */
 export function projectPurchaseOrders({
+  years = HORIZON_YEARS,
   yearZeroYear,
   yearZeroTotal,
   yearZeroOrders,
@@ -66,7 +67,7 @@ export function projectPurchaseOrders({
   const base = projectionBase(annualized, history)
   const growth = asFiniteNumber(demandGrowth)
 
-  HORIZON_YEARS.forEach((year) => {
+  years.forEach((year) => {
     if (yearZeroYear === undefined || year < yearZeroYear) return
     if (year === yearZeroYear) {
       purchaseOrders[year] = actual

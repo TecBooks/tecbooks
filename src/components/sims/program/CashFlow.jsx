@@ -17,7 +17,7 @@ function CashFlow({ project, currency }) {
       <CollapsibleSection title="Net Flow Graph">
         <NetFlowGraph project={project} currency={currency}/>
       </CollapsibleSection>
-      <CollapsibleSection title="TREMA / TIR / VNA">
+      <CollapsibleSection title="MARR / IRR / NPV">
         <ProjectEvaluationSummary project={project} currency={currency}/>
       </CollapsibleSection>
     </>
