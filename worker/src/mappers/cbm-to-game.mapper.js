@@ -49,6 +49,12 @@ function classifyEmployeeCategory(name, type) {
   const normalizedType = String(type ?? '').trim().toLowerCase();
   if (normalizedType === 'administracion') return 'administrative';
   if (normalizedType === 'operacion') return 'indirect';
+  // Same English Classification labels as applyDerivedBase.js. InputNovus
+  // rows still match the Spanish name prefixes above.
+  if (normalizedType === 'direct labor') return 'direct';
+  if (normalizedType === 'indirect labor') return 'indirect';
+  if (normalizedType === 'engineering') return 'engineering';
+  if (normalizedType === 'administration' || normalizedType === 'administrative') return 'administrative';
   return null;
 }
 
