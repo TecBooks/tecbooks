@@ -180,7 +180,7 @@ function checkUnitEconomics(project, years) {
       'unit-loses-money',
       'warning',
       'Unit economics',
-      `Material per unit (BOM ${fmt(material)} / quality yield = up to ${fmt(worst)}) is not below the sale price ${fmt(price)} in ${all ? 'every year' : listItems(losing)} - every unit loses money before salaries and investment${all ? ', so the cash flow never turns positive and the TIR will be N/A' : ''}.`,
+      `Material per unit (BOM ${fmt(material)} / quality yield = up to ${fmt(worst)}) is not below the sale price ${fmt(price)} in ${all ? 'every year' : listItems(losing)} - every unit loses money before salaries and investment${all ? ', so the cash flow never turns positive and the IRR will be N/A' : ''}.`,
     ),
   ]
 }

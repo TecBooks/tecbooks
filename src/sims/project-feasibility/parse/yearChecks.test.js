@@ -70,6 +70,22 @@ describe("detectYearZero", () => {
   });
 });
 
+describe("projection length", () => {
+  it("allows 2 to 15 projected years and clamps outside that range", () => {
+    expect(horizonYears(2026, 15)).toHaveLength(16); // 2026-2041
+    expect(horizonYears(2026, 15).at(-1)).toBe(2041);
+    expect(horizonYears(2026, 2)).toHaveLength(3);
+    expect(horizonYears(2026, 20)).toHaveLength(16); // clamped to 15
+    expect(horizonYears(2026, 1)).toHaveLength(3); // clamped to 2
+  });
+
+  it("a 15-year projection on an 11-year template reports the missing year columns", () => {
+    const report = createYearReport(horizonYears(2025, 15)); // 2025-2040
+    report.checkHeader("Premisas", detectYearHeader(["", ...horizonYears(2025, 10)])); // 2025-2035
+    expect(report.errors.join(" ")).toContain("no column for 2036, 2037, 2038, 2039 and 1 more");
+  });
+});
+
 describe("computeIRR with an invalid flow", () => {
   it("returns null (N/A), not the 1000% search bound, when a year is NaN/missing", () => {
     expect(computeIRR([-100, 50, NaN])).toBeNull();

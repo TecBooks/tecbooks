@@ -42,7 +42,7 @@ function readWorkbook(input) {
  *
  * Year zero: `options.yearZero` (what the user picked at upload) or, when not
  * given, the one the workbook's own sheets suggest (parse/yearZero.js).
- * Projection: `options.projectionYears` (2-10, default 10). The horizon is
+ * Projection: `options.projectionYears` (2-15, default 10). The horizon is
  * year zero .. year zero + projectionYears, and every sheet is read against
  * it (extra year columns past it are ignored).
  *

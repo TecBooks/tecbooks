@@ -51,7 +51,7 @@ Upload is multipart: `name`, `projects` (JSON, CBM **without** `derivedBase`), `
 
 ## Years (horizon)
 
-- Year zero and projection length are picked by the user at upload (`NewProgram` → "Year zero" picker, pre-selected by `parse/yearZero.js` `detectYearZero`; "Projection" picker, 2-10 years, default 10). Horizon = year zero .. +N (`horizonYears(yearZero, projectionYears)`). Size series by `timeline.years.length`, never by `HORIZON_LENGTH` (legacy 11).
+- Year zero and projection length are picked by the user at upload (`NewProgram` → "Year zero" picker, pre-selected by `parse/yearZero.js` `detectYearZero`; "Projection" picker, 2-15 years (`MIN/MAX_PROJECTION_YEARS`), default 10). Horizon = year zero .. +N (`horizonYears(yearZero, projectionYears)`). Size series by `timeline.years.length`, never by `HORIZON_LENGTH` (legacy 11).
 - A project's years are `cbm.timeline.years` (`projectYears(cbm)` in `constants.js`). Every per-year series (`premises.*`, `capacity.line.*`, `acquisitionByYear`) is indexed from that year zero: `series[i]` ↔ `timeline.years[i]`. Map index→year with `yearMapFromSeries(series, years, timelineStart(cbm))`.
 - **Do not** use `HORIZON_YEARS` / `HORIZON_START_YEAR` (legacy 2025 default) to label or index project data, and never `2025 + index` in the worker (assets carry `yearly: [{year, cost}]` from `cbm-to-game.mapper.js`).
 - Sheet readers take a `report` (`parse/yearReport.js`): a year header that skips a year or lacks a horizon year → **error** (blocks upload); a blank cell under an existing year column → **warning**. Invalid files stay staged so the user can change year zero and re-parse (`StagingContext.setYearZero`).

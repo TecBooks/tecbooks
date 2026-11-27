@@ -7,7 +7,7 @@
 // default (2025 + 10) for callers that have no project at hand (old tests,
 // fixtures) - never use them to label, index or size a project's own data.
 export const MIN_PROJECTION_YEARS = 2
-export const MAX_PROJECTION_YEARS = 10
+export const MAX_PROJECTION_YEARS = 15
 export const DEFAULT_PROJECTION_YEARS = 10
 export const HORIZON_LENGTH = DEFAULT_PROJECTION_YEARS + 1
 export const DEFAULT_YEAR_ZERO = 2025

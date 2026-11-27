@@ -114,7 +114,7 @@ function ProjectEvaluationSummary({ project, currency }) {
   return (
     <Box>
       <p className="mb-3 text-[17.5px] text-slate-500">
-        TREMA, TIR and VNA based on the project's full {years.length}-year cash flow ({years[0]}-
+        MARR, IRR and NPV based on the project's full {years.length}-year cash flow ({years[0]}-
         {years[years.length - 1]}) - the accept/reject call below follows directly from them.
       </p>
 
@@ -138,17 +138,17 @@ function ProjectEvaluationSummary({ project, currency }) {
           </div>
         </Grid>
         <Grid item xs={6} sm={3}>
-          <Stat label="TREMA" value={formatPct(trema)} highlight />
+          <Stat label="MARR" value={formatPct(trema)} highlight />
         </Grid>
         <Grid item xs={6} sm={3}>
           <Stat
-            label="TIR"
+            label="IRR"
             value={irr === null ? "N/A" : formatPct(irr)}
             highlight
           />
         </Grid>
         <Grid item xs={6} sm={3}>
-          <Stat label="VNA (NPV)" value={formatCurrency(npv, currency)} highlight />
+          <Stat label="NPV" value={formatCurrency(npv, currency)} highlight />
         </Grid>
         <Grid item xs={6} sm={3} sx={{ display: "flex", alignItems: "center" }}>
           <Chip

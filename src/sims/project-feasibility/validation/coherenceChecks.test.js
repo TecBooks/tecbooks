@@ -77,7 +77,7 @@ describe("warnings - incoherent strategy or likely mistakes", () => {
     const item = find(project, "unit-loses-money");
     expect(item.severity).toBe("warning");
     expect(item.message).toContain("every year");
-    expect(item.message).toContain("TIR will be N/A");
+    expect(item.message).toContain("IRR will be N/A");
   });
 
   it("unit loses money only in a low-yield year", () => {
