@@ -64,6 +64,12 @@ function classifyEmployeeCategory(name, type) {
   const normalizedType = String(type ?? '').trim().toLowerCase()
   if (normalizedType === 'administracion') return 'administrative'
   if (normalizedType === 'operacion') return 'indirect'
+  // TECBooks Standard 1.0 stores the category in Classification, not in the
+  // Spanish name prefix. These labels never appear on an InputNovus row.
+  if (normalizedType === 'direct labor') return 'direct'
+  if (normalizedType === 'indirect labor') return 'indirect'
+  if (normalizedType === 'engineering') return 'engineering'
+  if (normalizedType === 'administration' || normalizedType === 'administrative') return 'administrative'
   return null
 }
 

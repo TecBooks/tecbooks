@@ -113,7 +113,10 @@ export function validateProjectClass(project) {
     errors.push('The product (BOM) must have a name')
   }
 
-  if (!Array.isArray(project.capacity?.machines) || project.capacity.machines.length < 1) {
+  // Standard 1.0 families are not all factories. A missing machine list is
+  // empty capacity, not a rejected upload. InputNovus still requires one.
+  const isStandard = project.metadata?.source === 'tecbooks-standard-1.0'
+  if (!isStandard && (!Array.isArray(project.capacity?.machines) || project.capacity.machines.length < 1)) {
     errors.push('Capacity must have at least one machine')
   }
 

@@ -49,6 +49,10 @@ Upload is multipart: `name`, `projects` (JSON, CBM **without** `derivedBase`), `
 
 **New work:** add a tab-scoped GET + TanStack key (table above in `technical-debt.md`). Query Novus tables by `gameId` (`premises`, `expenses`, `game_team_employees`, `game_team_assets`, `boms`, `capacity`, purchase orders). Never hardcode `gameId = 1`. `enabled: Number.isInteger(gameId) && gameId > 0`.
 
+## Excel dialects
+
+Upload parsing stays in `parseNovusProject`. A workbook with sheets `General`, `PREMISES`, and `Dictionary` is TECBooks Standard 1.0 (`parse/standard/`). Every table is kept on `project.standard`. Keys that match an existing CBM field are copied onto that field. InputNovus workbooks keep the `sheets.js` readers and do not grow a `standard` key. Dashboard calculators are not branched by dialect.
+
 ## Client folders
 
 - Sim HTTP: `src/sims/project-feasibility/api/` (auth, programs). Other leftover sim HTTP still in `src/api/sims/<feature>/`.

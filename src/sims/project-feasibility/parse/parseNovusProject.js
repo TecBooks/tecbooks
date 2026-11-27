@@ -14,6 +14,8 @@ import {
   readPremisas,
   readServicios,
 } from './sheets.js'
+import { isStandardWorkbook, readStandardWorkbook } from './standard/readStandardWorkbook.js'
+import { projectFromStandard } from './standard/projectFromStandard.js'
 
 const logger = new Logger('ParseNovusProject')
 
@@ -34,14 +36,33 @@ function readWorkbook(input) {
   throw new Error('Expected an ArrayBuffer or an xlsx workbook')
 }
 
+function finishProject(project, fileName) {
+  applyDerivedBase(project)
+  const validation = validateProjectClass(project)
+  if (!validation.valid) {
+    logger.warn('workbook parsed with validation errors', { fileName, errors: validation.errors })
+  } else {
+    logger.debug('workbook parsed OK', { fileName })
+  }
+  return { project, validation }
+}
+
 /**
- * Parse one Novus project workbook.
+ * Parse one project workbook. Standard 1.0 files (General + PREMISES + Dictionary)
+ * take the table reader. Every other workbook stays on the InputNovus sheet readers.
  * @param {ArrayBuffer | Uint8Array | object} input
  * @param {{ fileName?: string }} [options]
  */
 export function parseNovusProject(input, { fileName } = {}) {
   logger.info('parsing workbook', { fileName })
   const workbook = readWorkbook(input)
+  if (isStandardWorkbook(workbook)) {
+    const project = createProjectClass({ fileName })
+    project.metadata.source = 'tecbooks-standard-1.0'
+    projectFromStandard(project, readStandardWorkbook(workbook))
+    return finishProject(project, fileName)
+  }
+
   const missing = REQUIRED_SHEETS.filter((name) => !workbook.Sheets[name])
   if (missing.length) {
     logger.warn('workbook missing required sheets', { fileName, missing })
@@ -65,16 +86,7 @@ export function parseNovusProject(input, { fileName } = {}) {
   readServicios(toRows(workbook, 'Servicios'), project)
 
   project.metadata.name = project.bom.productName || ''
-  applyDerivedBase(project)
-
-  const validation = validateProjectClass(project)
-  if (!validation.valid) {
-    logger.warn('workbook parsed with validation errors', { fileName, errors: validation.errors })
-  } else {
-    logger.debug('workbook parsed OK', { fileName })
-  }
-
-  return { project, validation }
+  return finishProject(project, fileName)
 }
 
 export async function parseNovusProjectFile(file) {
