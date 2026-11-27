@@ -17,6 +17,8 @@ import { buildCostOfSales } from "./buildCostOfSales";
 import { cbmToOperatingExpenseInputs } from "./cbmToCostTableInputs";
 import { computeCashBalanceByYear } from "@/sims/project-feasibility/costTable/cashFlowCalculations.js";
 import formatCurrency from "@/utils/sims/program/formatCurrency.util";
+import { buildKpiAlerts } from "@/sims/project-feasibility/validation/kpiAlerts.js";
+import KpiAlerts from "./KpiAlerts.jsx";
 
 function formatPct(value) {
   return `${(Number(value) * 100).toFixed(2)}%`;
@@ -110,6 +112,11 @@ function ProjectEvaluationSummary({ project, currency }) {
   const npv = computeNPV(netCashFlowByYear, trema);
   const irr = computeIRR(netCashFlowByYear);
   const decision = decideProject(npv, irr, trema);
+  const kpiAlerts = buildKpiAlerts(project.cbm, {
+    irr,
+    flowByYear: endingBalanceByYear,
+    currency,
+  });
 
   return (
     <Box>
@@ -173,6 +180,8 @@ function ProjectEvaluationSummary({ project, currency }) {
           helperText="No source field in InputNovus - enter as a percentage (e.g. 10 = 10%)"
         />
       </Box>
+
+      <KpiAlerts alerts={kpiAlerts} />
     </Box>
   );
 }
